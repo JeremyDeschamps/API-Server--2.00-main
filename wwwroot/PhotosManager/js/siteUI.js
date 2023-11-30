@@ -1,8 +1,12 @@
-import { timeout } from './session';
-
 let contentScrollPosition = 0;
+initUI();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
+function initUI() {
+    updateHeader();
+    renderLoginForm();
+
+}
 function showWaitingGif() {
     eraseContent();
     $("#content").append($("<div class='waitingGifcontainer'><img class='waitingGif' src='images/Loading_icon.gif' /></div>'"));
@@ -16,8 +20,36 @@ function saveContentScrollPosition() {
 function restoreContentScrollPosition() {
     $("#content")[0].scrollTop = contentScrollPosition;
 }
-function updateHeader(text, whatever /* TODO: rename this shit */) {
+
+const ContentType = {
+    login: "login",
+    signup: "signup",
+
+}
+
+/**
+ * 
+ * @param {*} text 
+ * @param {*} headerType 0 : takes a ContentType 
+ */
+function updateHeader(text, headerType) 
+{
+
+    switch (headerType)
+    {
+        case "login":
+            break;
+
+        case "signup":
+            break;
+
+    }
     const loggedUser = API.retrieveLoggedUser();
+    if (loggedUser === null)
+    {
+        $("#header").append($("ta mère en shorts"));
+        return;
+    }
     $("#header").append(
         $(`
             <div id="header">
@@ -42,6 +74,7 @@ function updateHeader(text, whatever /* TODO: rename this shit */) {
         `)
     )
 }
+
 function renderAbout() {
     timeout();
     saveContentScrollPosition();
