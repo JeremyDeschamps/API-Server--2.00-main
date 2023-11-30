@@ -3,7 +3,7 @@ initUI();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
 function initUI() {
-    updateHeader();
+    updateHeader("Connexion", "wtv");
     renderLoginForm();
 
 }
@@ -32,47 +32,36 @@ const ContentType = {
  * @param {*} text 
  * @param {*} headerType 0 : takes a ContentType 
  */
-function updateHeader(text, headerType) 
-{
-
-    switch (headerType)
-    {
-        case "login":
-            break;
-
-        case "signup":
-            break;
-
-    }
+function updateHeader(text, headerType) {
     const loggedUser = API.retrieveLoggedUser();
-    if (loggedUser === null)
-    {
-        $("#header").append($("ta mère en shorts"));
-        return;
-    }
-    $("#header").append(
-        $(`
-            <div id="header">
-                <span title="Liste des photos" id="listPhotosCmd">
-                    <img src="images/PhotoCloudLogo.png" class="appLogo">
-                </span>
-                <span class="viewTitle">Liste des photos
-                    <div class="cmdIcon fa fa-plus" id="newPhotoCmd" title="Ajouter une photo"></div>
-                </span>
-                <div class="headerMenusContainer">
-                    <span>&nbsp;</span> <!--filler-->
-                    <i title="Modifier votre profil">
-                        <div class="UserAvatarSmall" userid="${loggedUser.Id}" id="editProfilCmd"
-                            style="background-image:url('${loggedUser.Avatar}')"
-                            title="Nicolas Chourot"></div>
-                    </i>
-                    <div class="dropdown ms-auto dropdownLayout">
-                        <!-- Articles de menu -->
+    if (loggedUser === null) {
+        $("#header").append(
+            $(`
+            <span title="Liste des photos" id="listPhotosCmd">
+                <img src="images/PhotoCloudLogo.png" class="appLogo">
+            </span>
+            <span id="viewTitle" class="viewTitle">
+                ${text}
+            </span>
+            <div class="dropdown ms-auto">
+                <div data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="cmdIcon fa fa-ellipsis-vertical"></i>
+                </div>
+                <div class="dropdown-menu noselect">
+                    <div class="dropdown-item" id="loginCmd">
+                        <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
+                    </div>
+                    <div class="dropdown-divider"></div>
+
+                    <div class="dropdown-item" id="aboutCmd">
+                        <i class="menuIcon fa fa-info-circle mx-2"></i> À propos...
                     </div>
                 </div>
             </div>
-        `)
-    )
+
+        `));
+        return;
+    }
 }
 
 function renderAbout() {
@@ -100,8 +89,7 @@ function renderAbout() {
         `))
 }
 
-function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "")
-{
+function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
 
     eraseContent();
     $("#content").append(
@@ -224,16 +212,16 @@ function renderSignUpForm() {
     initFormValidation();
     initImageUploaders();
     $('#abortCmd').on('click', renderLoginForm); // call back sur clic
-     // ajouter le mécanisme de vérification de doublon de courriel
+    // ajouter le mécanisme de vérification de doublon de courriel
 
     addConflictValidation(API.checkConflictURL(), 'Email', 'saveUser');
-     // call back la soumission du formulaire
+    // call back la soumission du formulaire
     $('#createProfilForm').on("submit", function (event) {
         let profil = getFormData($('#createProfilForm'));
 
         delete profil.matchedPassword;
         delete profil.matchedEmail;
-        
+
         event.preventDefault();// empêcher le fureteur de soumettre une requête de soumission
         showWaitingGif(); // afficher GIF d’attente
         createProfil(profil); // commander la création au service API
