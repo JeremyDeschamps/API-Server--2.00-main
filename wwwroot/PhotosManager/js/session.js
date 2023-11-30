@@ -29,7 +29,7 @@ function initTimeout(stallingTime = infinite, callback = timeoutCallBack) {
 function noTimeout() {
     clearTimeout(currentTimeouID);
 }
-function timeout() {
+export function timeout() {
     startCountdown();
 }
 function startCountdown() {
