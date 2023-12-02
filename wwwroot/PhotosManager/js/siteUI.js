@@ -3,7 +3,7 @@ initUI();
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
 function initUI() {
-    updateHeader("Connexion", "wtv");
+    initHeader("Connexion");
     renderLoginForm();
 
 }
@@ -32,9 +32,8 @@ const ContentType = {
  * @param {*} text 
  * @param {*} headerType 0 : takes a ContentType 
  */
-function updateHeader(text, headerType) {
-    const loggedUser = API.retrieveLoggedUser();
-    if (loggedUser === null) {
+function initHeader(text, headerType = "default") {
+    if (headerType === "default") {
         $("#header").append(
             $(`
             <span title="Liste des photos" id="listPhotosCmd">
@@ -62,6 +61,11 @@ function updateHeader(text, headerType) {
         `));
         return;
     }
+}
+function updateHeader(text, updateType = "default") {
+    $("#viewTitle").text(text);
+
+
 }
 
 function renderAbout() {
@@ -91,6 +95,7 @@ function renderAbout() {
 
 function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
 
+    updateHeader("Connexion");
     eraseContent();
     $("#content").append(
         $(`
@@ -142,6 +147,8 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             else
             {
                 //TODO: render problem
+                updateHeader("Problème");
+                renderErrorMessage("Le serveur ne répond pas");
             }
         }
     });
@@ -255,6 +262,16 @@ function renderSignUpForm() {
         createProfil(profil); // commander la création au service API
     });
 
+}
+function renderErrorMessage(errorMessage = "") {
+    eraseContent();
+    $("#content").append(
+        $(` <div class="errorContainer"><b>${errorMessage}</b></div>
+            <hr>
+            <button class="form-control btn-primary" id="connectionButton">Connexion</button>
+        `)
+    );
+    $("#connectionButton").click(() => renderLoginForm());
 }
 function getFormData($form) {
     const removeTag = new RegExp("(<[a-zA-Z0-9]+>)|(</[a-zA-Z0-9]+>)", "g");
