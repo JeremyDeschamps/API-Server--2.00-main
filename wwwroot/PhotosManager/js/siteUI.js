@@ -1,4 +1,5 @@
 let contentScrollPosition = 0;
+let dropdown;
 $(document).ready(() => initUI());
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
@@ -46,20 +47,12 @@ function initHeader(text, headerType = "default") {
                 <div data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="cmdIcon fa fa-ellipsis-vertical"></i>
                 </div>
-                <div class="dropdown-menu noselect">
-                    <div class="dropdown-item" id="loginCmd">
-                        <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
-                    </div>
-                    <div class="dropdown-divider"></div>
-
-                    <div class="dropdown-item" id="aboutCmd">
-                        <i class="menuIcon fa fa-info-circle mx-2"></i> À propos...
-                    </div>
+                <div class="dropdown-menu noselect" id="dropdown">
                 </div>
             </div>
-
         `));
-        return;
+        dropdown = new DropdownMenu($("#dropdown"));
+        dropdown.guestMenu();
     }
 }
 function updateHeader(text, updateType = "default") {
@@ -276,4 +269,133 @@ function getFormData($form) {
         jsonObject[control.name] = control.value.replace(removeTag, "");
     });
     return jsonObject;
+}
+
+function updateDropdown()
+{
+}
+
+class DropdownMenu
+{
+    constructor(appendTo)
+    {
+        this.appendTo = appendTo;
+    }
+
+    guestMenu()
+    {
+        this.clear();
+        this.login();
+        this.divider();
+        this.about();
+    }
+    userMenu()
+    {
+        this.clear();
+        this.logout();
+        this.editProfile();
+        this.divider();
+        this.listPictures();
+        this.divider();
+        this.sortByDate();
+        this.sortByOwners();
+        this.sortByLikes();
+        this.sortBySelf();
+        this.divider();
+        this.about();
+    }
+    adminMenu()
+    {
+        this.clear();
+        this.manageUsers();
+        this.divider();
+        this.logout();
+        this.editProfile();
+        this.divider();
+        this.listPictures();
+        this.divider();
+        this.sortByDate();
+        this.sortByOwners();
+        this.sortByLikes();
+        this.sortBySelf();
+        this.divider();
+        this.about();
+    }
+    clear()
+    {
+        this.appendTo.empty();
+    }
+    login()
+    {
+        this.addItem("loginDropdownBtn", "Connexion", "fa-sign-in", renderLoginForm);
+    }
+    logout()
+    {
+        this.addItem("logoutDropdownBtn", "Déconnexion", "fa-sign-out", logout);
+    }
+    about()
+    {
+        this.addItem("aboutDropdownBtn", "À propos...", "fa-info-circle", renderAbout);
+    }
+    editProfile()
+    {
+        this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit", editProfile);
+    }
+    listPictures()
+    {
+        this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image", renderPhotos);
+    }
+    manageUsers()
+    {
+        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog", managerUsers);
+    }
+    sortByDate(selected)
+    {
+        this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar", renderPhotos, selected);
+    }
+    sortByOwners(selected)
+    {
+        this.addItem("sortByOwnerDropdownBtn", "Photos par créateur", "fa-users", renderPhotos, selected); //TODO: programatically sort pictures
+    }
+    sortByLikes(selected)
+    {
+        this.addItem("sortByLikesDropdownBtn", "Photos les plus aimées", "fa-heart", renderPhotos, selected);
+    }
+    sortBySelf(selected)
+    {
+        this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user", renderPhotos, selected);
+    }
+
+    divider()
+    {
+        this.appendTo.append(`<div class="dropdown-divider"></div>`);
+    }
+
+    
+    addItem(id, content, icon, action, selected = null)
+    {
+        this.appendTo.append(`<span class="dropdown-item" id="${id}">
+        ${selected === null || selected === undefined ? "" : `<i class="menuIcon fa ${selected ? "check" : "fw"} max-2></i>` /* null: doesn't add margin, true: add checkmark, false: add margin */}
+        <i class="menuIcon fas ${icon} mx-2"></i>
+        ${content}
+        </span>`);
+
+        $(`#${id}`).click(action);
+    }
+}
+
+function logout()
+{
+    API.logout();
+    renderLoginForm();
+}
+
+function editProfile()
+{
+
+}
+
+function managerUsers()
+{
+
 }
