@@ -1,5 +1,5 @@
 let contentScrollPosition = 0;
-initUI();
+$(document).ready(() => initUI());
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
 function initUI() {
@@ -153,7 +153,7 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
         }
     });
 
-    $("#createProfilCmd").click(renderSignUpForm).bind(this);
+    $("#createProfilCmd").click(() => renderSignUpForm());
 }
 
 function renderPhotos() {
