@@ -55,6 +55,7 @@ export default class AccountsController extends Controller {
     }
 
     sendVerificationEmail(user) {
+        user = this.repository.findByField("Id",user.Id);
         let html = `
                 Bonjour ${user.Name}, <br /> <br />
                 Voici votre code pour confirmer votre adresse de courriel
