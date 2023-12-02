@@ -122,6 +122,34 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
         </div>
         `)
     )
+    $('#loginForm').on("submit", async (e) => {
+        e.preventDefault();
+        const login = getFormData($("#loginForm"));
+        const result = await API.login(login.Email, login.Password);
+        if (result)
+        {
+            // TODO: Change to content
+            renderAbout();
+        }
+        else
+        {
+            const errorMessage = API.currentHttpError;
+            const status = API.currentStatus;
+            if (status === 481)
+                renderLoginForm("", login.Email, errorMessage);
+            else if (status === 482)
+                renderLoginForm("", login.Email, "", errorMessage);
+            else
+            {
+                //TODO: render problem
+            }
+        }
+    });
+}
+
+function renderPhotos() {
+    eraseContent();
+    $("#content").append("<p>Main page</p>");
 }
 
 function renderSignUpForm() {
@@ -227,4 +255,12 @@ function renderSignUpForm() {
         createProfil(profil); // commander la création au service API
     });
 
+}
+function getFormData($form) {
+    const removeTag = new RegExp("(<[a-zA-Z0-9]+>)|(</[a-zA-Z0-9]+>)", "g");
+    var jsonObject = {};
+    $.each($form.serializeArray(), (index, control) => {
+        jsonObject[control.name] = control.value.replace(removeTag, "");
+    });
+    return jsonObject;
 }
