@@ -297,10 +297,10 @@ class DropdownMenu
         this.divider();
         this.listPictures();
         this.divider();
-        this.sortByDate();
-        this.sortByOwners();
-        this.sortByLikes();
-        this.sortBySelf();
+        this.sortByDate(true);
+        this.sortByOwners(false);
+        this.sortByLikes(false);
+        this.sortBySelf(false);
         this.divider();
         this.about();
     }
@@ -314,10 +314,10 @@ class DropdownMenu
         this.divider();
         this.listPictures();
         this.divider();
-        this.sortByDate();
-        this.sortByOwners();
-        this.sortByLikes();
-        this.sortBySelf();
+        this.sortByDate(true);
+        this.sortByOwners(false);
+        this.sortByLikes(false);
+        this.sortBySelf(false);
         this.divider();
         this.about();
     }
@@ -375,7 +375,7 @@ class DropdownMenu
     addItem(id, content, icon, action, selected = null)
     {
         this.appendTo.append(`<span class="dropdown-item" id="${id}">
-        ${selected === null || selected === undefined ? "" : `<i class="menuIcon fa ${selected ? "check" : "fw"} max-2></i>` /* null: doesn't add margin, true: add checkmark, false: add margin */}
+        ${selected === null || selected === undefined ? "" : `<i class="menuIcon fa fa-${selected ? "check" : "fw"} max-2"></i>` /* null: doesn't add margin, true: add checkmark, false: add margin */}
         <i class="menuIcon fas ${icon} mx-2"></i>
         ${content}
         </span>`);
