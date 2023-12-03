@@ -166,6 +166,20 @@ export default class Repository {
         }
         return null;
     }
+    keepByFilter(filterFunc) {
+        let objectsList = this.objects();
+        if (objectsList) {
+            this.objectsList = objectsList.filter(filterFunc);
+            this.write();
+        }
+    }
+    findByFilter(filterFunc) {
+        let objectsList = this.objects();
+        if (objectsList) {
+            return objectsList.filter(filterFunc);
+        }
+        return null;
+    }
     indexOf(id) {
         let index = 0;
         for (let object of this.objects()) {

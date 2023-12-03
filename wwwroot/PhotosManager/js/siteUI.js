@@ -5,9 +5,8 @@ $(document).ready(() => initUI());
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
 function initUI() {
-    initHeader("Connexion");
+    initHeader("Connexion","default");
     renderLoginForm();
-
 }
 function showWaitingGif() {
     eraseContent();
@@ -22,21 +21,41 @@ function saveContentScrollPosition() {
 function restoreContentScrollPosition() {
     $("#content")[0].scrollTop = contentScrollPosition;
 }
-
 const ContentType = {
     login: "login",
     signup: "signup",
-    
-}
 
+}
 /**
  * 
  * @param {*} text 
  * @param {*} headerType 0 : takes a ContentType 
 */
 function initHeader(text, headerType = "default") {
-    
+    $("#header").empty();
     if (headerType === "default") {
+        $("#header").append(
+            $(`
+            <span title="Liste des photos" id="listPhotosCmd">
+            <img src="images/PhotoCloudLogo.png" class="appLogo">
+            </span>
+            <span id="viewTitle" class="viewTitle">
+                ${text}
+            </span>
+            <div class="dropdown ms-auto">
+            <div data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="cmdIcon fa fa-ellipsis-vertical"></i>
+            </div>
+            <div class="dropdown-menu noselect" id="dropdown">
+            </div>
+            `));
+    }
+    dropdown = new DropdownMenu($("#dropdown"));
+    dropdown.guestMenu();
+}
+function updateHeader(text, updateType = "default") {
+    $("#header").empty();
+    if (updateType === "default") {
         $("#header").append(
             $(`
             <span title="Liste des photos" id="listPhotosCmd">
@@ -46,28 +65,53 @@ function initHeader(text, headerType = "default") {
             ${text}
             </span>
             <div class="dropdown ms-auto">
-                <div data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="cmdIcon fa fa-ellipsis-vertical"></i>
-                </div>
-                <div class="dropdown-menu noselect" id="dropdown">
+            <div data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="cmdIcon fa fa-ellipsis-vertical"></i>
+            </div>
+            <div class="dropdown-menu noselect" id="dropdown">
+            </div>
+            </div>
+            `));
+            dropdown = new DropdownMenu($("#dropdown"));
+            dropdown.guestMenu();
+    }
+    if (updateType == "Logged") {
+        const loggedUser = API.retrieveLoggedUser();
+        $("#header").append(
+            $(`
+            <span title="Liste des photos" id="listPhotosCmd">
+            <img src="images/PhotoCloudLogo.png" class="appLogo">
+            </span>
+            <span class="viewTitle">Liste des photos
+            <div class="cmdIcon fa fa-plus" id="newPhotoCmd" title="Ajouter une photo"></div>
+            </span>
+            <div class="headerMenusContainer">
+                <span>&nbsp;</span> <!--filler-->
+                <i title="Modifier votre profil">
+                    <div class="UserAvatarSmall" userid="${loggedUser.Id}" id="editProfilCmd"
+                    style="background-image:url('${loggedUser.Avatar}')"
+                    title="Nicolas Chourot">
+                    </div>
+                </i>
+                <div class="dropdown ms-auto">
+                    <div data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="cmdIcon fa fa-ellipsis-vertical"></i>
+                    </div>
+                    <div class="dropdown-menu noselect" id="dropdown">
+                    </div>
                 </div>
             </div>
-        `));
+            `)
+        );
         dropdown = new DropdownMenu($("#dropdown"));
-        dropdown.guestMenu();
+        dropdown.userMenu();
     }
 }
-function updateHeader(text, updateType = "default") {
-    $("#viewTitle").text(text);
-
-
-}
-
 function renderAbout() {
     timeout();
     saveContentScrollPosition();
     eraseContent();
-    updateHeader("À propos...", "about");
+    updateHeader("À propos...");
 
     $("#content").append(
         $(`
@@ -86,13 +130,13 @@ function renderAbout() {
                 </p>
             </div>
         `))
-    }
-    function renderVerificationForm(VerifError = ""){
-        const user = API.retrieveLoggedUser()
-        
-        updateHeader("Verification",);
-        eraseContent();
-        $("#content").append($(`
+}
+function renderVerificationForm(VerifError = "") {
+    const user = API.retrieveLoggedUser()
+
+    updateHeader("Verification",);
+    eraseContent();
+    $("#content").append($(`
         <div class="content" style="text-align:center">
         <p><b>Veuillez entrer le code de vérification que vous avez reçu par couriel</b></p>
         <form class="form" id="verifyForm">
@@ -108,27 +152,24 @@ function renderAbout() {
         </form>
         </div>
         `))
-        $('#verifyForm').on("submit", async (e) => {
-            e.preventDefault();
-            const verifyData = getFormData($("#verifyForm"));
-            const verify = await API.verifyEmail(user.Id ,verifyData.VerifyCode);
-            if(verify)
-            {
+    $('#verifyForm').on("submit", async (e) => {
+        e.preventDefault();
+        const verifyData = getFormData($("#verifyForm"));
+        const verify = await API.verifyEmail(user.Id, verifyData.VerifyCode);
+        if (verify) {
+            user.VerifyCode = "verified";
+            renderPhotos();
+        }
+        else
+            renderVerificationForm("Le code ne corespond pas à celui envoyer..");
+    });
+}
+function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
 
-                user.VerifyCode = "verified";
-                renderPhotos();
-            }
-
-            else
-                renderVerificationForm("Le code ne corespond pas à celui envoyer..");
-        });
-    }
-    function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
-        
-        updateHeader("Connexion");
-        eraseContent();
-        $("#content").append(
-            $(`
+    updateHeader("Connexion","default");
+    eraseContent();
+    $("#content").append(
+        $(`
             <div class="content" style="text-align:center">
             <h3>${loginMessage}</h3>
             <form class="form" id="loginForm">
@@ -156,51 +197,42 @@ function renderAbout() {
         </div>
         </div>
         `)
-        )
-        $('#loginForm').on("submit", async (e) => {
-            e.preventDefault();
-            const login = getFormData($("#loginForm"));
-            const user = await API.login(login.Email, login.Password);
-            if (user)
-            {
-                // TODO: Change to content
-                if(user.VerifyCode === "unverified")
-                {
-                    renderVerificationForm();
-                }
-                else
-                    renderAbout();
-            }
+    )
+    $('#loginForm').on("submit", async (e) => {
+        e.preventDefault();
+        const login = getFormData($("#loginForm"));
+        const user = await API.login(login.Email, login.Password);
+        if (user) {
+            // TODO: Change to content
+            if (user.VerifyCode === "unverified")
+                renderVerificationForm();
             else
-            {
-                const errorMessage = API.currentHttpError;
-                const status = API.currentStatus;
-                if (status === 481)
+                renderPhotos();
+        }
+        else {
+            const errorMessage = API.currentHttpError;
+            const status = API.currentStatus;
+            if (status === 481)
                 renderLoginForm("", login.Email, errorMessage);
             else if (status === 482)
-            renderLoginForm("", login.Email, "", errorMessage);
-            else
-            {
+                renderLoginForm("", login.Email, "", errorMessage);
+            else {
                 //TODO: render problem
-                updateHeader("Problème");
                 renderErrorMessage("Le serveur ne répond pas");
             }
-    }
-});
-
+        }
+    });
     $("#createProfilCmd").click(() => renderSignUpForm());
 }
-
 function renderPhotos() {
     eraseContent();
-    updateHeader("Photos");
+    updateHeader("Photos", "Logged");
     $("#content").append("<p>Main page</p>");
 }
-
 function renderSignUpForm() {
     noTimeout(); // ne pas limiter le temps d’inactivité
     eraseContent(); // effacer le conteneur #content
-    updateHeader("Inscription", "createProfile"); // mettre à jour l’entête et menu
+    updateHeader("Inscription", "default"); // mettre à jour l’entête et menu
     $("#newPhotoCmd").hide(); // cammoufler l’icone de commande d’ajout de photo
     $("#content").append(`
         <form class="form" id="createProfilForm"'>
@@ -287,15 +319,15 @@ function renderSignUpForm() {
         showWaitingGif(); // afficher GIF d’attente
         const result = await API.register(profil); // commander la création au service API
 
-        if (result)
-        {
+        if (result) {
             renderLoginForm("Votre compte a été créé. Veuillez prendre vos courriels pour récupérer votre code de " +
-            "vérification qui vous sera demandé lors de votre prochaine connexion");
+                "vérification qui vous sera demandé lors de votre prochaine connexion");
         }
     });
 
 }
 function renderErrorMessage(errorMessage = "") {
+    updateHeader("Problème");
     eraseContent();
     $("#content").append(
         $(` <div class="errorContainer"><b>${errorMessage}</b></div>
@@ -313,27 +345,18 @@ function getFormData($form) {
     });
     return jsonObject;
 }
-
-function updateDropdown()
-{
-}
-
-class DropdownMenu
-{
-    constructor(appendTo)
-    {
+class DropdownMenu {
+    constructor(appendTo) {
         this.appendTo = appendTo;
     }
 
-    guestMenu()
-    {
+    guestMenu() {
         this.clear();
         this.login();
         this.divider();
         this.about();
     }
-    userMenu()
-    {
+    userMenu() {
         this.clear();
         this.logout();
         this.editProfile();
@@ -347,8 +370,7 @@ class DropdownMenu
         this.divider();
         this.about();
     }
-    adminMenu()
-    {
+    adminMenu() {
         this.clear();
         this.manageUsers();
         this.divider();
@@ -364,59 +386,46 @@ class DropdownMenu
         this.divider();
         this.about();
     }
-    clear()
-    {
+    clear() {
         this.appendTo.empty();
     }
-    login()
-    {
-        this.addItem("loginDropdownBtn", "Connexion", "fa-sign-in", renderLoginForm);
+    login() {
+        this.addItem("loginDropdownBtn", "Connexion", "fa-sign-in", () => renderLoginForm());
     }
-    logout()
-    {
-        this.addItem("logoutDropdownBtn", "Déconnexion", "fa-sign-out", logout);
+    logout() {
+        this.addItem("logoutDropdownBtn", "Déconnexion", "fa-sign-out",() => logout());
     }
-    about()
-    {
-        this.addItem("aboutDropdownBtn", "À propos...", "fa-info-circle", renderAbout);
+    about() {
+        this.addItem("aboutDropdownBtn", "À propos...", "fa-info-circle",() => renderAbout());
     }
-    editProfile()
-    {
-        this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit", editProfile);
+    editProfile() {
+        this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit",() => editProfile());
     }
-    listPictures()
-    {
-        this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image", renderPhotos);
+    listPictures() {
+        this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image",() => renderPhotos());
     }
-    manageUsers()
-    {
-        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog", manageUsers);
+    manageUsers() {
+        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog",() => managerUsers());
     }
-    sortByDate(selected)
-    {
-        this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar", renderPhotos, selected);
+    sortByDate(selected) {
+        this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar",() => renderPhotos(), selected);
     }
-    sortByOwners(selected)
-    {
-        this.addItem("sortByOwnerDropdownBtn", "Photos par créateur", "fa-users", renderPhotos, selected); //TODO: programatically sort pictures
+    sortByOwners(selected) {
+        this.addItem("sortByOwnerDropdownBtn", "Photos par créateur", "fa-users",() => renderPhotos(), selected); //TODO: programatically sort pictures
     }
-    sortByLikes(selected)
-    {
-        this.addItem("sortByLikesDropdownBtn", "Photos les plus aimées", "fa-heart", renderPhotos, selected);
+    sortByLikes(selected) {
+        this.addItem("sortByLikesDropdownBtn", "Photos les plus aimées", "fa-heart",() => renderPhotos(), selected);
     }
-    sortBySelf(selected)
-    {
-        this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user", renderPhotos, selected);
+    sortBySelf(selected) {
+        this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user",() => renderPhotos(), selected);
     }
 
-    divider()
-    {
+    divider() {
         this.appendTo.append(`<div class="dropdown-divider"></div>`);
     }
 
-    
-    addItem(id, content, icon, action, selected = null)
-    {
+
+    addItem(id, content, icon, action, selected = null) {
         this.appendTo.append(`<span class="dropdown-item" id="${id}">
         ${selected === null || selected === undefined ? "" : `<i class="menuIcon fa fa-${selected ? "check" : "fw"} max-2"></i>` /* null: doesn't add margin, true: add checkmark, false: add margin */}
         <i class="menuIcon fas ${icon} mx-2"></i>
@@ -427,14 +436,12 @@ class DropdownMenu
     }
 }
 
-function logout()
-{
+function logout() {
     API.logout();
     renderLoginForm();
 }
 
-function editProfile()
-{
+function editProfile() {
 
 }
 
