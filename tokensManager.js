@@ -12,7 +12,7 @@ global.tokenLifeDuration = ServerVariables.get("main.token.lifeDuration");
 export default
     class TokensManager {
     static create(user) {
-        let token = TokensManager.findUser(user.Id);
+        let token = TokensManager.findUser(user);
         if (!token) {
             token = Token.create(user);
             token.Expire_Time = utilities.nowInSeconds() + tokenLifeDuration;
@@ -23,12 +23,13 @@ export default
         }
         return token;
     }
-    static findUser(userId) {
+    static findUser(user) {
         let tokens = tokensRepository.getAll();
         for (let token of tokens) {
-            if (token.User.Id == userId) {
+            if (token.User.Id == user.Id) {
                 // renew expiration date
                 token.Expire_Time = utilities.nowInSeconds() + tokenLifeDuration;
+                token.User = user;
                 tokensRepository.update(token.Id, token);
                 return token;
             }
