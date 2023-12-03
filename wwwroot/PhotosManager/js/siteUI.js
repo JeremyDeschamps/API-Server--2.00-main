@@ -179,12 +179,12 @@ function renderAbout() {
                 renderLoginForm("", login.Email, errorMessage);
             else if (status === 482)
             renderLoginForm("", login.Email, "", errorMessage);
-        else
-        {
-            //TODO: render problem
-            updateHeader("Problème");
-            renderErrorMessage("Le serveur ne répond pas");
-        }
+            else
+            {
+                //TODO: render problem
+                updateHeader("Problème");
+                renderErrorMessage("Le serveur ne répond pas");
+            }
     }
 });
 
@@ -390,7 +390,7 @@ class DropdownMenu
     }
     manageUsers()
     {
-        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog", managerUsers);
+        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog", manageUsers);
     }
     sortByDate(selected)
     {
@@ -438,7 +438,82 @@ function editProfile()
 
 }
 
-function managerUsers()
+async function manageUsers()
 {
+    const accounts = await API.GetAccounts();
 
+    if (accounts)
+    {
+        renderManagerUsers(accounts);
+    }
+    else
+    {
+        const errorMessage = API.currentHttpError;
+        const status = API.currentStatus;
+
+        await API.logout();
+        renderErrorMessage(errorMessage);
+    }
+}
+
+function renderManagerUsers(accounts)
+{
+    console.log(accounts.data);
+    const content = $("#content");
+    content.empty();
+    content.append(`<div class="UserContainer"></div>`);
+    const container = $(".UserContainer");
+    accounts.data.forEach(user => 
+    {
+        const isAdmin = user.Authorizations.readAccess == 2 && user.Authorizations.writeAccess == 2;
+        const isBlocked = user.Authorizations.readAccess == -1 && user.Authorizations.writeAccess == -1;
+        container.append(`
+            <div class="UserLayout">
+                <img class="UserAvatar" src="${user.Avatar}">
+                <div class"UserInfo">
+                    <div class="UserName">${user.Name}</div>
+                    <div class="UserEmail">${user.Email}</div>
+                </div>
+            </div>
+            <div class="UserCommandPanel">
+                <i data-cmdPromote class="fas fa-user-${isAdmin ? "cog" : "alt"} dodgerblueCmd cmdIconVisible" 
+                title="${isAdmin ? "Retirer les droits administrateur" : "Promouvoir administrateur"}"></i>
+
+                <i data-cmdBlock class="fa ${isBlocked ? "fa-ban redCmd" : "fa-regular fa-circle greenCmd cmdIconVisible"}" 
+                title="${isBlocked ? "Débloquer l'accès" : "Bloquer l'accès"}"></i>
+                <i data-cmdRemove class="fas fa-user-slash cmdIconVisible goldenrodCmd" title="Effacer l'usager"></i>
+            </div>
+
+        `);
+
+        const userHTML = container.children().last();
+        userHTML.find("i[data-cmdPromote]").click(() => isAdmin ? changeUserPermissions(user, 1, 1) : changeUserPermissions(user, 2, 2));
+        userHTML.find("i[data-cmdBlock]").click(() => isBlocked ? changeUserPermissions(user, 1, 1) : changeUserPermissions(user, -1, -1));
+        userHTML.find("i[data-cmdRemove]").click(() => deleteUser(user));
+    });
+}
+
+async function changeUserPermissions(user, writeAccess, readAccess)
+{
+    user.Authorizations.writeAccess = writeAccess;
+    user.Authorizations.readAccess = readAccess;
+    delete user.Email;
+    delete user.Name;
+    delete user.Password;
+    delete user.Avatar;
+    delete user.VerifyCode;
+    if (await API.modifyUserProfil(user))
+        manageUsers();
+    else
+    {
+        const errorMessage = API.currentHttpError;
+
+        await API.logout();
+        renderErrorMessage(errorMessage);
+    }
+}
+
+async function deleteUser(user)
+{
+    console.log("delete");
 }
