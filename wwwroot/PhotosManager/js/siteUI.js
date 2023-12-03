@@ -75,14 +75,45 @@ function updateHeader(text, updateType = "default") {
             dropdown = new DropdownMenu($("#dropdown"));
             dropdown.guestMenu();
     }
-    if (updateType == "Logged") {
+    if (updateType == "logged") {
         const loggedUser = API.retrieveLoggedUser();
         $("#header").append(
             $(`
             <span title="Liste des photos" id="listPhotosCmd">
             <img src="images/PhotoCloudLogo.png" class="appLogo">
             </span>
-            <span class="viewTitle">Liste des photos
+            <span class="viewTitle">${text}
+            <div class="cmdIcon fa fa-plus" id="newPhotoCmd" title="Ajouter une photo"></div>
+            </span>
+            <div class="headerMenusContainer">
+                <span>&nbsp;</span> <!--filler-->
+                <i title="Modifier votre profil">
+                    <div class="UserAvatarSmall" userid="${loggedUser.Id}" id="editProfilCmd"
+                    style="background-image:url('${loggedUser.Avatar}')"
+                    title="Nicolas Chourot">
+                    </div>
+                </i>
+                <div class="dropdown ms-auto">
+                    <div data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="cmdIcon fa fa-ellipsis-vertical"></i>
+                    </div>
+                    <div class="dropdown-menu noselect" id="dropdown">
+                    </div>
+                </div>
+            </div>
+            `)
+        );
+        dropdown = new DropdownMenu($("#dropdown"));
+        dropdown.userMenu();
+    }
+    if (updateType == "admin") {
+        const loggedUser = API.retrieveLoggedUser();
+        $("#header").append(
+            $(`
+            <span title="Liste des photos" id="listPhotosCmd">
+            <img src="images/PhotoCloudLogo.png" class="appLogo">
+            </span>
+            <span class="viewTitle">${text}
             <div class="cmdIcon fa fa-plus" id="newPhotoCmd" title="Ajouter une photo"></div>
             </span>
             <div class="headerMenusContainer">
@@ -134,7 +165,7 @@ function renderAbout() {
 function renderVerificationForm(VerifError = "") {
     const user = API.retrieveLoggedUser()
 
-    updateHeader("Verification",);
+    updateHeader("Verification","logged");
     eraseContent();
     $("#content").append($(`
         <div class="content" style="text-align:center">
@@ -207,7 +238,7 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             if (user.VerifyCode === "unverified")
                 renderVerificationForm();
             else
-                renderPhotos();
+                renderDeleteUser(user); //renderPhotos();
         }
         else {
             const errorMessage = API.currentHttpError;
@@ -226,7 +257,7 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
 }
 function renderPhotos() {
     eraseContent();
-    updateHeader("Photos", "Logged");
+    updateHeader("Photos", "logged");
     $("#content").append("<p>Main page</p>");
 }
 function renderSignUpForm() {
@@ -434,6 +465,36 @@ class DropdownMenu {
 
         $(`#${id}`).click(action);
     }
+}
+
+function renderDeleteUser(user){
+    eraseContent();
+    updateHeader("Retrait de compte", "logged");
+    $("#content").append(
+        $(` 
+        <div class="content form" style="text-align:center">
+            <h3>Voulez vous vraiment effacer cet usager et toutes ses photos ?</h3>
+                <div class="UserLayout">
+                    <img class="UserAvatar" src="${user.Avatar}">
+                    <div class"UserInfo">
+                        <div class="UserName">${user.Name}</div>
+                        <div class="UserEmail">${user.Email}</div>
+                    </div>
+                </div>
+            <button class="form-control btn-info" id="effacerButton">Effacer</button>
+            <br>
+            <button class="form-control btn-info" id="annulerButton">Annuler</button>
+        </div>
+        `)
+    );
+    $("#effacerButton").click( async () => {
+        if(await API.unsubscribeAccount(user.Id))
+            renderAbout(); //TO-DO: retourner a la page d'Avant
+        else
+            renderErrorMessage("Deletion not completed and Error");
+        
+    });
+    $("#annulerButton").click( () => console.log("Nthing for now ! "));
 }
 
 function logout() {
