@@ -1,11 +1,17 @@
 let contentScrollPosition = 0;
 let dropdown;
+const ContentType = {
+    login: "login",
+    signup: "signup",
+
+}
 $(document).ready(() => initUI());
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
 function initUI() {
     initHeader("Connexion","default");
     renderLoginForm();
+    initTimeout(100,() => renderLoginForm("Votre session est expirée. Veuillez vous reconnecter."));
 }
 function showWaitingGif() {
     eraseContent();
@@ -19,11 +25,6 @@ function saveContentScrollPosition() {
 }
 function restoreContentScrollPosition() {
     $("#content")[0].scrollTop = contentScrollPosition;
-}
-const ContentType = {
-    login: "login",
-    signup: "signup",
-
 }
 /**
  * 
@@ -146,10 +147,16 @@ function updateHeader(text, updateType = "default") {
         listPhotosBtn.click(() => renderPhotos());
 }
 function renderAbout() {
+    const loggedUser = API.retrieveLoggedUser();
+    let type = "default";
+    if(loggedUser != undefined)
+        type = loggedUser.Authorizations.readAccess === 2 && loggedUser.Authorizations.writeAccess === 2 ? "admin" : "logged";
+
+    
     timeout();
     saveContentScrollPosition();
     eraseContent();
-    updateHeader("À propos...");
+    updateHeader("À propos...", type);
 
     $("#content").append(
         $(`
@@ -170,8 +177,7 @@ function renderAbout() {
         `))
 }
 function renderVerificationForm(VerifError = "") {
-    const user = API.retrieveLoggedUser()
-
+    const user = API.retrieveLoggedUser();
     updateHeader("Verification","logged");
     eraseContent();
     $("#content").append($(`
@@ -197,20 +203,19 @@ function renderVerificationForm(VerifError = "") {
         if (verify) {
             user.VerifyCode = "verified";
             renderPhotos();
-            initTimeout();
         }
         else
             renderVerificationForm("Le code ne correspond pas à celui envoyé..");
     });
 }
 function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
-
+    noTimeout();
     updateHeader("Connexion","default");
     eraseContent();
     $("#content").append(
         $(`
             <div class="content" style="text-align:center">
-            <h3>${loginMessage}</h3>
+            <div class="errorContainer">${loginMessage}</div>
             <form class="form" id="loginForm">
             <input type='email'
             name='Email'
@@ -247,7 +252,6 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
                 renderVerificationForm();
             else{
                 renderPhotos();
-                initTimeout();
             }
         }
         else {
@@ -276,6 +280,7 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
     $("#createProfilCmd").click(() => renderSignUpForm());
 }
 function renderPhotos() {
+    timeout();
     eraseContent();
     const user = API.retrieveLoggedUser();
     
@@ -293,6 +298,7 @@ function renderEditProfileForm() {
     const loggedUser = API.retrieveLoggedUser();
     const type = loggedUser.Authorizations.readAccess === 2 && loggedUser.Authorizations.writeAccess === 2 ? "admin" : "logged";
 
+    timeout();
     eraseContent();
     updateHeader("Modifier le profil", type);
     
@@ -499,6 +505,7 @@ function renderSignUpForm() {
 
 }
 function renderErrorMessage(errorMessage = "") {
+    noTimeout();
     updateHeader("Problème");
     eraseContent();
     $("#content").append(
@@ -517,6 +524,112 @@ function getFormData($form) {
     });
     return jsonObject;
 }
+function renderDeleteUser(user){
+    noTimeout();
+    eraseContent();
+    updateHeader("Retrait de compte", "logged");
+    $("#content").append(
+        $(` 
+        <div class="content form" style="text-align:center">
+        <h3>Voulez vous vraiment effacer cet usager et toutes ses photos ?</h3>
+        <div class="UserLayout">
+        <img class="UserAvatar" src="${user.Avatar}">
+        <div class"UserInfo">
+        <div class="UserName">${user.Name}</div>
+        <div class="UserEmail">${user.Email}</div>
+        </div>
+        </div>
+        <button class="form-control btn-danger" id="effacerButton">Effacer</button>
+        <br>
+        <button class="form-control btn-secondary" id="annulerButton">Annuler</button>
+        </div>
+        `)
+    );
+    $("#effacerButton").click( async () => {
+        if(await API.unsubscribeAccount(user.Id))
+        manageUsers(); //TO-DO: retourner a la page d'Avant
+    else
+            renderErrorMessage("Deletion not completed and Error");
+        
+    });
+    $("#annulerButton").click( () => manageUsers());
+}
+function logout() {
+    API.logout();
+    renderLoginForm();
+}
+async function manageUsers()
+{
+    const accounts = await API.GetAccounts();
+    
+    if (accounts)
+    {
+        renderManagerUsers(accounts);
+    }
+    else
+    {
+        const errorMessage = API.currentHttpError;
+        const status = API.currentStatus;
+        
+        await API.logout();
+        renderErrorMessage(errorMessage);
+    }
+}
+function renderManagerUsers(accounts)
+{
+    console.log(accounts.data);
+    const content = $("#content");
+    content.empty();
+    content.append(`<div class="UserContainer"></div>`);
+    const container = $(".UserContainer");
+    accounts.data.forEach(user => 
+    {
+        const isAdmin = user.Authorizations.readAccess == 2 && user.Authorizations.writeAccess == 2;
+        const isBlocked = user.Authorizations.readAccess == -1 && user.Authorizations.writeAccess == -1;
+        container.append(`
+        <div class="UserLayout">
+        <img class="UserAvatar" src="${user.Avatar}">
+        <div class"UserInfo">
+        <div class="UserName">${user.Name}</div>
+        <div class="UserEmail">${user.Email}</div>
+        </div>
+        </div>
+        <div class="UserCommandPanel">
+        <i data-cmdPromote class="fas fa-user-${isAdmin ? "cog" : "alt"} dodgerblueCmd cmdIconVisible" 
+        title="${isAdmin ? "Retirer les droits administrateur" : "Promouvoir administrateur"}"></i>
+        
+        <i data-cmdBlock class="fa ${isBlocked ? "fa-ban redCmd" : "fa-regular fa-circle greenCmd"} cmdIconVisible" 
+        title="${isBlocked ? "Débloquer l'accès" : "Bloquer l'accès"}"></i>
+        <i data-cmdRemove class="fas fa-user-slash cmdIconVisible goldenrodCmd" title="Effacer l'usager"></i>
+        </div>
+        
+        `);
+
+        const userHTML = container.children().last();
+        userHTML.find("i[data-cmdPromote]").click(() => isAdmin ? changeUserPermissions(user, 1, 1) : changeUserPermissions(user, 2, 2));
+        userHTML.find("i[data-cmdBlock]").click(() => isBlocked ? changeUserPermissions(user, 1, 1) : changeUserPermissions(user, -1, -1));
+        userHTML.find("i[data-cmdRemove]").click(() => deleteUser(user));
+    });
+}
+async function changeUserPermissions(user, writeAccess, readAccess)
+{
+    user.Authorizations.writeAccess = writeAccess;
+    user.Authorizations.readAccess = readAccess;
+    delete user.Password;
+    delete user.Avatar;
+    if (await API.modifyUserProfil(user))
+    manageUsers();
+else
+    {
+        const errorMessage = API.currentHttpError;
+
+        await API.logout();
+        renderErrorMessage(errorMessage);
+    }
+}
+async function deleteUser(user) { renderDeleteUser(user);}
+
+
 class DropdownMenu {
     constructor(appendTo) {
         this.appendTo = appendTo;
@@ -604,113 +717,3 @@ class DropdownMenu {
         $(`#${id}`).click(action);
     }
 }
-
-function renderDeleteUser(user){
-    eraseContent();
-    updateHeader("Retrait de compte", "logged");
-    $("#content").append(
-        $(` 
-        <div class="content form" style="text-align:center">
-            <h3>Voulez vous vraiment effacer cet usager et toutes ses photos ?</h3>
-                <div class="UserLayout">
-                    <img class="UserAvatar" src="${user.Avatar}">
-                    <div class"UserInfo">
-                        <div class="UserName">${user.Name}</div>
-                        <div class="UserEmail">${user.Email}</div>
-                    </div>
-                </div>
-            <button class="form-control btn-info" id="effacerButton">Effacer</button>
-            <br>
-            <button class="form-control btn-info" id="annulerButton">Annuler</button>
-        </div>
-        `)
-    );
-    $("#effacerButton").click( async () => {
-        if(await API.unsubscribeAccount(user.Id))
-            renderAbout(); //TO-DO: retourner a la page d'Avant
-        else
-            renderErrorMessage("Deletion not completed and Error");
-        
-    });
-    $("#annulerButton").click( () => console.log("Nthing for now ! "));
-}
-
-function logout() {
-    API.logout();
-    renderLoginForm();
-}
-
-
-async function manageUsers()
-{
-    const accounts = await API.GetAccounts();
-
-    if (accounts)
-    {
-        renderManagerUsers(accounts);
-    }
-    else
-    {
-        const errorMessage = API.currentHttpError;
-        const status = API.currentStatus;
-
-        await API.logout();
-        renderErrorMessage(errorMessage);
-    }
-}
-
-function renderManagerUsers(accounts)
-{
-    console.log(accounts.data);
-    const content = $("#content");
-    content.empty();
-    content.append(`<div class="UserContainer"></div>`);
-    const container = $(".UserContainer");
-    accounts.data.forEach(user => 
-    {
-        const isAdmin = user.Authorizations.readAccess == 2 && user.Authorizations.writeAccess == 2;
-        const isBlocked = user.Authorizations.readAccess == -1 && user.Authorizations.writeAccess == -1;
-        container.append(`
-            <div class="UserLayout">
-                <img class="UserAvatar" src="${user.Avatar}">
-                <div class"UserInfo">
-                    <div class="UserName">${user.Name}</div>
-                    <div class="UserEmail">${user.Email}</div>
-                </div>
-            </div>
-            <div class="UserCommandPanel">
-                <i data-cmdPromote class="fas fa-user-${isAdmin ? "cog" : "alt"} dodgerblueCmd cmdIconVisible" 
-                title="${isAdmin ? "Retirer les droits administrateur" : "Promouvoir administrateur"}"></i>
-
-                <i data-cmdBlock class="fa ${isBlocked ? "fa-ban redCmd" : "fa-regular fa-circle greenCmd"} cmdIconVisible" 
-                title="${isBlocked ? "Débloquer l'accès" : "Bloquer l'accès"}"></i>
-                <i data-cmdRemove class="fas fa-user-slash cmdIconVisible goldenrodCmd" title="Effacer l'usager"></i>
-            </div>
-
-        `);
-
-        const userHTML = container.children().last();
-        userHTML.find("i[data-cmdPromote]").click(() => isAdmin ? changeUserPermissions(user, 1, 1) : changeUserPermissions(user, 2, 2));
-        userHTML.find("i[data-cmdBlock]").click(() => isBlocked ? changeUserPermissions(user, 1, 1) : changeUserPermissions(user, -1, -1));
-        userHTML.find("i[data-cmdRemove]").click(() => deleteUser(user));
-    });
-}
-
-async function changeUserPermissions(user, writeAccess, readAccess)
-{
-    user.Authorizations.writeAccess = writeAccess;
-    user.Authorizations.readAccess = readAccess;
-    delete user.Password;
-    delete user.Avatar;
-    if (await API.modifyUserProfil(user))
-        manageUsers();
-    else
-    {
-        const errorMessage = API.currentHttpError;
-
-        await API.logout();
-        renderErrorMessage(errorMessage);
-    }
-}
-
-async function deleteUser(user) { renderDeleteUser(user);}

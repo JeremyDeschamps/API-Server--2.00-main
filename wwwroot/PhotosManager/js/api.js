@@ -122,7 +122,8 @@ class API {
                 headers: API.getBearerAuthorizationToken(),
                 data: JSON.stringify(profil),
                 success: (profil) => {
-                    API.storeLoggedUser(profil);
+                    if(profil.Id === API.retrieveLoggedUser().Id)
+                        API.storeLoggedUser(profil);
                     resolve(profil);
                 },
                 error: xhr => { API.setHttpErrorState(xhr); resolve(false); }
