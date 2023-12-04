@@ -35,7 +35,7 @@ function initHeader(text, headerType = "default") {
     if (headerType === "default") {
         $("#header").append(
             $(`
-            <span title="Liste des photos" id="listPhotosCmd">
+            <span title="Liste des photos">
             <img src="images/PhotoCloudLogo.png" class="appLogo">
             </span>
             <span id="viewTitle" class="viewTitle">
@@ -57,7 +57,7 @@ function updateHeader(text, updateType = "default") {
     if (updateType === "default") {
         $("#header").append(
             $(`
-            <span title="Liste des photos" id="listPhotosCmd">
+            <span title="Liste des photos">
             <img src="images/PhotoCloudLogo.png" class="appLogo">
             </span>
             <span id="viewTitle" class="viewTitle">
@@ -136,6 +136,14 @@ function updateHeader(text, updateType = "default") {
         dropdown = new DropdownMenu($("#dropdown"));
         dropdown.adminMenu();
     }
+
+    const editBtn = $("#editProfilCmd");
+    if (editBtn.length !== 0)
+        editBtn.click(() => renderEditProfileForm());
+
+    const listPhotosBtn = $("#listPhotosCmd");
+    if (listPhotosBtn.length !== 0)
+        listPhotosBtn.click(() => renderPhotos());
 }
 function renderAbout() {
     timeout();
@@ -189,9 +197,10 @@ function renderVerificationForm(VerifError = "") {
         if (verify) {
             user.VerifyCode = "verified";
             renderPhotos();
+            initTimeout();
         }
         else
-            renderVerificationForm("Le code ne corespond pas à celui envoyer..");
+            renderVerificationForm("Le code ne correspond pas à celui envoyé..");
     });
 }
 function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
@@ -237,8 +246,8 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             if (user.VerifyCode === "unverified")
                 renderVerificationForm();
             else{
-                
                 renderPhotos();
+                initTimeout();
             }
         }
         else {
@@ -269,16 +278,126 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
 function renderPhotos() {
     eraseContent();
     const user = API.retrieveLoggedUser();
-
+    
     if(user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
-        updateHeader("Photos", "admin");
-    else
-        updateHeader("Photos", "logged");
+    updateHeader("Photos", "admin");
+else
+updateHeader("Photos", "logged");
 
-    /**TODO
-    *Ajout PhotoPage
-    */
-    $("#content").append("<p>Main page</p>");
+/**TODO
+ *Ajout PhotoPage
+ */
+$("#content").append("<p>Main page</p>");
+}
+function renderEditProfileForm() {
+    const loggedUser = API.retrieveLoggedUser();
+    const type = loggedUser.Authorizations.readAccess === 2 && loggedUser.Authorizations.writeAccess === 2 ? "admin" : "logged";
+
+    eraseContent();
+    updateHeader("Modifier le profil", type);
+    
+    $("#content").append(`
+        <form class="form" id="editProfilForm"'>
+        <input type="hidden" name="Id" id="Id" value="${loggedUser.Id}"/>
+        <fieldset>
+        <legend>Adresse ce courriel</legend>
+        <input type="email"
+        class="form-control Email"
+        name="Email"
+        id="Email"
+        placeholder="Courriel"
+        required
+        RequireMessage = 'Veuillez entrer votre courriel'
+        InvalidMessage = 'Courriel invalide'
+        CustomErrorMessage ="Ce courriel est déjà utilisé"
+        value="${loggedUser.Email}" >
+        <input class="form-control MatchedInput"
+        type="text"
+        matchedInputId="Email"
+        name="matchedEmail"
+        id="matchedEmail"
+        placeholder="Vérification"
+        required
+        RequireMessage = 'Veuillez entrez de nouveau votre courriel'
+        InvalidMessage="Les courriels ne correspondent pas"
+        value="${loggedUser.Email}" >
+        </fieldset>
+        <fieldset>
+        <legend>Mot de passe</legend>
+        <input type="password"
+        class="form-control"
+        name="Password"
+        id="Password"
+        placeholder="Mot de passe"
+        InvalidMessage = 'Mot de passe trop court' >
+        <input class="form-control MatchedInput"
+        type="password"
+        matchedInputId="Password"
+        name="matchedPassword"
+        id="matchedPassword"
+        placeholder="Vérification"
+        InvalidMessage="Ne correspond pas au mot de passe" >
+        </fieldset>
+        <fieldset>
+        <legend>Nom</legend>
+        <input type="text"
+        class="form-control Alpha"
+        name="Name"
+        id="Name"
+        placeholder="Nom"
+        required
+        RequireMessage = 'Veuillez entrer votre nom'
+        InvalidMessage = 'Nom invalide'
+        value="${loggedUser.Name}" >
+        </fieldset>
+        <fieldset>
+        <legend>Avatar</legend>
+        <div class='imageUploader'
+        newImage='false'
+        controlId='Avatar'
+        imageSrc='${loggedUser.Avatar}'
+        waitingImage="images/Loading_icon.gif">
+        </div>
+        </fieldset>
+        <input type='submit'
+        name='submit'
+        id='saveUserCmd'
+        value="Enregistrer"
+        class="form-control btn-primary">
+        </form>
+        <div class="cancel">
+        <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
+        </div>
+        <div class="cancel"> <hr>
+        <a href="confirmDeleteProfil.php">
+        <button class="form-control btn-warning">Effacer le compte</button>
+        </a>
+        </div>
+    `);
+
+    initFormValidation();
+    initImageUploaders();
+    $('#abortCmd').on('click', () => renderPhotos()); // call back sur clic
+    // ajouter le mécanisme de vérification de doublon de courriel
+
+    addConflictValidation(API.checkConflictURL(), 'Email', 'saveUser');
+    // call back la soumission du formulaire
+    $('#editProfilForm').on("submit", async function (event) {
+        let profil = getFormData($('#editProfilForm'));
+
+        delete profil.matchedPassword;
+        delete profil.matchedEmail;
+
+        event.preventDefault();// empêcher le fureteur de soumettre une requête de soumission
+        showWaitingGif(); // afficher GIF d’attente
+        const result = await API.modifyUserProfil(profil); // commander la création au service API
+
+        if (result)
+            renderPhotos();
+        else
+            renderErrorMessage(API.errorMessage);
+    });
+
 }
 function renderSignUpForm() {
     noTimeout(); // ne pas limiter le temps d’inactivité
@@ -352,10 +471,10 @@ function renderSignUpForm() {
         <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
         </div>
     `);
-    $('#loginCmd').on('click', renderLoginForm); // call back sur clic
+    $('#loginCmd').on('click', () => renderLoginForm()); // call back sur clic
     initFormValidation();
     initImageUploaders();
-    $('#abortCmd').on('click', renderLoginForm); // call back sur clic
+    $('#abortCmd').on('click', () => renderLoginForm()); // call back sur clic
     // ajouter le mécanisme de vérification de doublon de courriel
 
     addConflictValidation(API.checkConflictURL(), 'Email', 'saveUser');
@@ -374,6 +493,8 @@ function renderSignUpForm() {
             renderLoginForm("Votre compte a été créé. Veuillez prendre vos courriels pour récupérer votre code de " +
                 "vérification qui vous sera demandé lors de votre prochaine connexion");
         }
+        else
+            renderErrorMessage(API.currentHttpError);
     });
 
 }
@@ -450,7 +571,7 @@ class DropdownMenu {
         this.addItem("aboutDropdownBtn", "À propos...", "fa-info-circle",() => renderAbout());
     }
     editProfile() {
-        this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit",() => editProfile());
+        this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit",() => renderEditProfileForm());
     }
     listPictures() {
         this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image",() => renderPhotos());
@@ -519,9 +640,6 @@ function logout() {
     renderLoginForm();
 }
 
-function editProfile() {
-
-}
 
 async function manageUsers()
 {

@@ -160,10 +160,10 @@ export default class AccountsController extends Controller {
                 user.Created = utilities.nowInSeconds();
                 let foundedUser = this.repository.findByField("Id", user.Id);
                 if (foundedUser != null) {
-                    if (user.Authorizations === null || !isAdmin)
+                    if (user.Authorizations === null || user.Authorizations === undefined || !isAdmin)
                         user.Authorizations = foundedUser.Authorizations; // user cannot change its own authorizations
                     user.VerifyCode = foundedUser.VerifyCode;
-                    if (user.Password === undefined) { // password not changed
+                    if (user.Password === undefined || user.Password === '') { // password not changed
                         user.Password = foundedUser.Password;
                     }
                     if (user.Avatar === undefined) user.Avatar = foundedUser.Avatar;
