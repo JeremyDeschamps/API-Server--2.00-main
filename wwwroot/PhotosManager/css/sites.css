@@ -248,3 +248,7 @@ legend {
 div2{
     border: 1px solid red;
 }
+
+#listPhotosCmd {
+    cursor: pointer;
+}
