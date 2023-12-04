@@ -1,4 +1,3 @@
-
 let contentScrollPosition = 0;
 let dropdown;
 $(document).ready(() => initUI());
@@ -75,7 +74,7 @@ function updateHeader(text, updateType = "default") {
             dropdown = new DropdownMenu($("#dropdown"));
             dropdown.guestMenu();
     }
-    if (updateType == "logged") {
+    else if (updateType == "logged") {
         const loggedUser = API.retrieveLoggedUser();
         $("#header").append(
             $(`
@@ -106,7 +105,7 @@ function updateHeader(text, updateType = "default") {
         dropdown = new DropdownMenu($("#dropdown"));
         dropdown.userMenu();
     }
-    if (updateType == "admin") {
+    else if (updateType == "admin") {
         const loggedUser = API.retrieveLoggedUser();
         $("#header").append(
             $(`
@@ -135,7 +134,7 @@ function updateHeader(text, updateType = "default") {
             `)
         );
         dropdown = new DropdownMenu($("#dropdown"));
-        dropdown.userMenu();
+        dropdown.adminMenu();
     }
 }
 function renderAbout() {
@@ -237,8 +236,10 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             // TODO: Change to content
             if (user.VerifyCode === "unverified")
                 renderVerificationForm();
-            else
+            else{
+                
                 renderPhotos();
+            }
         }
         else {
             const errorMessage = API.currentHttpError;
@@ -267,7 +268,16 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
 }
 function renderPhotos() {
     eraseContent();
-    updateHeader("Photos", "logged");
+    const user = API.retrieveLoggedUser();
+
+    if(user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
+        updateHeader("Photos", "admin");
+    else
+        updateHeader("Photos", "logged");
+
+    /**TODO
+    *Ajout PhotoPage
+    */
     $("#content").append("<p>Main page</p>");
 }
 function renderSignUpForm() {
@@ -446,7 +456,7 @@ class DropdownMenu {
         this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image",() => renderPhotos());
     }
     manageUsers() {
-        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog",() => managerUsers());
+        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog",() => manageUsers());
     }
     sortByDate(selected) {
         this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar",() => renderPhotos(), selected);
@@ -460,12 +470,9 @@ class DropdownMenu {
     sortBySelf(selected) {
         this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user",() => renderPhotos(), selected);
     }
-
     divider() {
         this.appendTo.append(`<div class="dropdown-divider"></div>`);
     }
-
-
     addItem(id, content, icon, action, selected = null) {
         this.appendTo.append(`<span class="dropdown-item" id="${id}">
         ${selected === null || selected === undefined ? "" : `<i class="menuIcon fa fa-${selected ? "check" : "fw"} max-2"></i>` /* null: doesn't add margin, true: add checkmark, false: add margin */}
@@ -588,7 +595,4 @@ async function changeUserPermissions(user, writeAccess, readAccess)
     }
 }
 
-async function deleteUser(user)
-{
-    console.log("delete");
-}
+async function deleteUser(user) { renderDeleteUser(user);}
