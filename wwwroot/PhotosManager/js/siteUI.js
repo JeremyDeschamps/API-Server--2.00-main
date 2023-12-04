@@ -197,9 +197,10 @@ function renderVerificationForm(VerifError = "") {
         if (verify) {
             user.VerifyCode = "verified";
             renderPhotos();
+            initTimeout();
         }
         else
-            renderVerificationForm("Le code ne corespond pas à celui envoyer..");
+            renderVerificationForm("Le code ne correspond pas à celui envoyé..");
     });
 }
 function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
@@ -245,8 +246,8 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             if (user.VerifyCode === "unverified")
                 renderVerificationForm();
             else{
-                
                 renderPhotos();
+                initTimeout();
             }
         }
         else {
