@@ -9,9 +9,9 @@ $(document).ready(() => initUI());
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
 function initUI() {
-    initHeader("Connexion","default");
+    initHeader("Connexion", "default");
     renderLoginForm();
-    initTimeout(100,() => renderLoginForm("Votre session est expirée. Veuillez vous reconnecter."));
+    initTimeout(100, () => renderLoginForm("Votre session est expirée. Veuillez vous reconnecter."));
 }
 function showWaitingGif() {
     eraseContent();
@@ -72,8 +72,8 @@ function updateHeader(text, updateType = "default") {
             </div>
             </div>
             `));
-            dropdown = new DropdownMenu($("#dropdown"));
-            dropdown.guestMenu();
+        dropdown = new DropdownMenu($("#dropdown"));
+        dropdown.guestMenu();
     }
     else if (updateType == "logged") {
         const loggedUser = API.retrieveLoggedUser();
@@ -149,10 +149,10 @@ function updateHeader(text, updateType = "default") {
 function renderAbout() {
     const loggedUser = API.retrieveLoggedUser();
     let type = "default";
-    if(loggedUser != undefined)
+    if (loggedUser != undefined)
         type = loggedUser.Authorizations.readAccess === 2 && loggedUser.Authorizations.writeAccess === 2 ? "admin" : "logged";
 
-    
+
     timeout();
     saveContentScrollPosition();
     eraseContent();
@@ -178,7 +178,7 @@ function renderAbout() {
 }
 function renderVerificationForm(VerifError = "") {
     const user = API.retrieveLoggedUser();
-    updateHeader("Verification","logged");
+    updateHeader("Verification", "logged");
     eraseContent();
     $("#content").append($(`
         <div class="content" style="text-align:center">
@@ -210,7 +210,7 @@ function renderVerificationForm(VerifError = "") {
 }
 function renderLoginForm(loginMessage = "", email = "", emailError = "", passwordError = "") {
     noTimeout();
-    updateHeader("Connexion","default");
+    updateHeader("Connexion", "default");
     eraseContent();
     $("#content").append(
         $(`
@@ -250,15 +250,14 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             // TODO: Change to content
             if (user.VerifyCode === "unverified")
                 renderVerificationForm();
-            else{
+            else {
                 renderPhotos();
             }
         }
         else {
             const errorMessage = API.currentHttpError;
             const status = API.currentStatus;
-            switch (status)
-            {
+            switch (status) {
                 case 481:
                     renderLoginForm("", login.Email, errorMessage);
                     break;
@@ -283,16 +282,16 @@ function renderPhotos() {
     timeout();
     eraseContent();
     const user = API.retrieveLoggedUser();
-    
-    if(user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
-    updateHeader("Photos", "admin");
-else
-updateHeader("Photos", "logged");
 
-/**TODO
- *Ajout PhotoPage
- */
-$("#content").append("<p>Main page</p>");
+    if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
+        updateHeader("Photos", "admin");
+    else
+        updateHeader("Photos", "logged");
+
+    /**TODO
+     *Ajout PhotoPage
+     */
+    $("#content").append("<p>Main page</p>");
 }
 function renderEditProfileForm() {
     const loggedUser = API.retrieveLoggedUser();
@@ -301,7 +300,7 @@ function renderEditProfileForm() {
     timeout();
     eraseContent();
     updateHeader("Modifier le profil", type);
-    
+
     $("#content").append(`
         <form class="form" id="editProfilForm"'>
         <input type="hidden" name="Id" id="Id" value="${loggedUser.Id}"/>
@@ -524,7 +523,7 @@ function getFormData($form) {
     });
     return jsonObject;
 }
-function renderDeleteUser(user){
+function renderDeleteUser(user) {
     noTimeout();
     eraseContent();
     updateHeader("Retrait de compte", "logged");
@@ -545,29 +544,26 @@ function renderDeleteUser(user){
         </div>
         `)
     );
-    $("#effacerButton").click( async () => {
-        if(await API.unsubscribeAccount(user.Id))
-        manageUsers(); //TO-DO: retourner a la page d'Avant
-    else
+    $("#effacerButton").click(async () => {
+        if (await API.unsubscribeAccount(user.Id))
+            manageUsers(); //TO-DO: retourner a la page d'Avant
+        else
             renderErrorMessage("Deletion not completed and Error");
-        
+
     });
-    $("#annulerButton").click( () => manageUsers());
+    $("#annulerButton").click(() => manageUsers());
 }
 function logout() {
     API.logout();
     renderLoginForm();
 }
-async function manageUsers()
-{
+async function manageUsers() {
     const accounts = await API.GetAccounts();
     
-    if (accounts)
-    {
+    if (accounts) {
         renderManagerUsers(accounts);
     }
-    else
-    {
+    else {
         const errorMessage = API.currentHttpError;
         const status = API.currentStatus;
         
@@ -575,15 +571,17 @@ async function manageUsers()
         renderErrorMessage(errorMessage);
     }
 }
-function renderManagerUsers(accounts)
-{
+function renderManagerUsers(accounts) {
+    timeout();
+    const loggedUser = API.retrieveLoggedUser();
     console.log(accounts.data);
     const content = $("#content");
     content.empty();
     content.append(`<div class="UserContainer"></div>`);
     const container = $(".UserContainer");
-    accounts.data.forEach(user => 
-    {
+    accounts.data.forEach(user => {
+        if(user.Id == loggedUser.Id)
+            return;
         const isAdmin = user.Authorizations.readAccess == 2 && user.Authorizations.writeAccess == 2;
         const isBlocked = user.Authorizations.readAccess == -1 && user.Authorizations.writeAccess == -1;
         container.append(`
@@ -611,23 +609,21 @@ function renderManagerUsers(accounts)
         userHTML.find("i[data-cmdRemove]").click(() => deleteUser(user));
     });
 }
-async function changeUserPermissions(user, writeAccess, readAccess)
-{
+async function changeUserPermissions(user, writeAccess, readAccess) {
     user.Authorizations.writeAccess = writeAccess;
     user.Authorizations.readAccess = readAccess;
     delete user.Password;
     delete user.Avatar;
     if (await API.modifyUserProfil(user))
-    manageUsers();
-else
-    {
+        manageUsers();
+    else {
         const errorMessage = API.currentHttpError;
 
         await API.logout();
         renderErrorMessage(errorMessage);
     }
 }
-async function deleteUser(user) { renderDeleteUser(user);}
+async function deleteUser(user) { renderDeleteUser(user); }
 
 
 class DropdownMenu {
@@ -678,31 +674,31 @@ class DropdownMenu {
         this.addItem("loginDropdownBtn", "Connexion", "fa-sign-in", () => renderLoginForm());
     }
     logout() {
-        this.addItem("logoutDropdownBtn", "Déconnexion", "fa-sign-out",() => logout());
+        this.addItem("logoutDropdownBtn", "Déconnexion", "fa-sign-out", () => logout());
     }
     about() {
-        this.addItem("aboutDropdownBtn", "À propos...", "fa-info-circle",() => renderAbout());
+        this.addItem("aboutDropdownBtn", "À propos...", "fa-info-circle", () => renderAbout());
     }
     editProfile() {
-        this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit",() => renderEditProfileForm());
+        this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit", () => renderEditProfileForm());
     }
     listPictures() {
-        this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image",() => renderPhotos());
+        this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image", () => renderPhotos());
     }
     manageUsers() {
-        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog",() => manageUsers());
+        this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog", () => manageUsers());
     }
     sortByDate(selected) {
-        this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar",() => renderPhotos(), selected);
+        this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar", () => renderPhotos(), selected);
     }
     sortByOwners(selected) {
-        this.addItem("sortByOwnerDropdownBtn", "Photos par créateur", "fa-users",() => renderPhotos(), selected); //TODO: programatically sort pictures
+        this.addItem("sortByOwnerDropdownBtn", "Photos par créateur", "fa-users", () => renderPhotos(), selected); //TODO: programatically sort pictures
     }
     sortByLikes(selected) {
-        this.addItem("sortByLikesDropdownBtn", "Photos les plus aimées", "fa-heart",() => renderPhotos(), selected);
+        this.addItem("sortByLikesDropdownBtn", "Photos les plus aimées", "fa-heart", () => renderPhotos(), selected);
     }
     sortBySelf(selected) {
-        this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user",() => renderPhotos(), selected);
+        this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user", () => renderPhotos(), selected);
     }
     divider() {
         this.appendTo.append(`<div class="dropdown-divider"></div>`);
