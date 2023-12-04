@@ -2,6 +2,11 @@ import TokenManager from './tokensManager.js';
 
 export default class Authorizations {
     // 0 anonymous, 1 user, 2 admin
+
+    static banned()
+    {
+        return { readAccess: -1, writeAccess: -1 };
+    }
     static anonymous() {
         return { readAccess: 0, writeAccess: 0 };
     }

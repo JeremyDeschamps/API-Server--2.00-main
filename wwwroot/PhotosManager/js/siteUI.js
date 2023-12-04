@@ -238,18 +238,28 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             if (user.VerifyCode === "unverified")
                 renderVerificationForm();
             else
-                renderDeleteUser(user); //renderPhotos();
+                renderPhotos();
         }
         else {
             const errorMessage = API.currentHttpError;
             const status = API.currentStatus;
-            if (status === 481)
-                renderLoginForm("", login.Email, errorMessage);
-            else if (status === 482)
-                renderLoginForm("", login.Email, "", errorMessage);
-            else {
-                //TODO: render problem
-                renderErrorMessage("Le serveur ne répond pas");
+            switch (status)
+            {
+                case 481:
+                    renderLoginForm("", login.Email, errorMessage);
+                    break;
+
+                case 482:
+                    renderLoginForm("", login.Email, "", errorMessage);
+                    break;
+
+                case 403:
+                    renderErrorMessage(errorMessage);
+                    break;
+
+                default:
+                    renderErrorMessage("Le serveur ne répond pas");
+                    break;
             }
         }
     });
@@ -547,7 +557,7 @@ function renderManagerUsers(accounts)
                 <i data-cmdPromote class="fas fa-user-${isAdmin ? "cog" : "alt"} dodgerblueCmd cmdIconVisible" 
                 title="${isAdmin ? "Retirer les droits administrateur" : "Promouvoir administrateur"}"></i>
 
-                <i data-cmdBlock class="fa ${isBlocked ? "fa-ban redCmd" : "fa-regular fa-circle greenCmd cmdIconVisible"}" 
+                <i data-cmdBlock class="fa ${isBlocked ? "fa-ban redCmd" : "fa-regular fa-circle greenCmd"} cmdIconVisible" 
                 title="${isBlocked ? "Débloquer l'accès" : "Bloquer l'accès"}"></i>
                 <i data-cmdRemove class="fas fa-user-slash cmdIconVisible goldenrodCmd" title="Effacer l'usager"></i>
             </div>
@@ -565,11 +575,8 @@ async function changeUserPermissions(user, writeAccess, readAccess)
 {
     user.Authorizations.writeAccess = writeAccess;
     user.Authorizations.readAccess = readAccess;
-    delete user.Email;
-    delete user.Name;
     delete user.Password;
     delete user.Avatar;
-    delete user.VerifyCode;
     if (await API.modifyUserProfil(user))
         manageUsers();
     else

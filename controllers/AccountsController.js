@@ -26,23 +26,41 @@ export default class AccountsController extends Controller {
     }
     // POST: /token body payload[{"Email": "...", "Password": "..."}]
     login(loginInfo) {
-        if (loginInfo) {
-            if (this.repository != null) {
-                let user = this.repository.findByField("Email", loginInfo.Email);
-                if (user != null) {
-                    if (user.Password == loginInfo.Password) {
-                        user = this.repository.get(user.Id);
-                        let newToken = TokenManager.create(user);
-                        this.HttpContext.response.created(newToken);
-                    } else {
-                        this.HttpContext.response.wrongPassword("Wrong password.");
-                    }
-                } else
-                    this.HttpContext.response.userNotFound("This user email is not found.");
-            } else
-                this.HttpContext.response.notImplemented();
-        } else
+    
+        if (!loginInfo) 
+        {
             this.HttpContext.response.badRequest("Credential Email and password are missing.");
+            return;
+        }
+
+        if (this.repository == null)
+        {
+            this.HttpContext.response.notImplemented();
+            return;
+        }
+
+        let user = this.repository.findByField("Email", loginInfo.Email);     
+        if (user == null)
+        {
+            this.HttpContext.response.userNotFound("This user email is not found.");
+            return;
+        }
+
+        if (user.Password != loginInfo.Password)
+        {
+            this.HttpContext.response.wrongPassword("Wrong password.");
+            return;
+        }
+
+        user = this.repository.get(user.Id);
+
+        if (user.Authorizations.readAccess === -1 && user.Authorizations.writeAccess === -1)
+        {
+            this.HttpContext.response.forbidden("Your account is blocked.");
+            return;
+        }
+        let newToken = TokenManager.create(user);
+        this.HttpContext.response.created(newToken);
     }
     logout() {
         let userId = this.HttpContext.path.params.userId;
@@ -136,17 +154,19 @@ export default class AccountsController extends Controller {
     // PUT:account/modify body payload[{"Id": 0, "Name": "...", "Email": "...", "Password": "..."}]
     modify(user) {
         // empty asset members imply no change and there values will be taken from the stored record
+        const isAdmin = Authorizations.writeGranted(this.HttpContext, Authorizations.admin());
         if (Authorizations.writeGranted(this.HttpContext, Authorizations.user())) {
             if (this.repository != null) {
                 user.Created = utilities.nowInSeconds();
                 let foundedUser = this.repository.findByField("Id", user.Id);
                 if (foundedUser != null) {
-                    user.Authorizations = foundedUser.Authorizations; // user cannot change its own authorizations
+                    if (user.Authorizations === null || !isAdmin)
+                        user.Authorizations = foundedUser.Authorizations; // user cannot change its own authorizations
                     user.VerifyCode = foundedUser.VerifyCode;
-                    if (user.Password == '') { // password not changed
+                    if (user.Password === undefined) { // password not changed
                         user.Password = foundedUser.Password;
                     }
-                    user.Authorizations = foundedUser.Authorizations;
+                    if (user.Avatar === undefined) user.Avatar = foundedUser.Avatar;
                     if (user.Email != foundedUser.Email) {
                         user.VerifyCode = utilities.makeVerifyCode(6);
                         this.sendVerificationEmail(user);
@@ -170,12 +190,12 @@ export default class AccountsController extends Controller {
     }
     // GET:account/remove/id
     remove(id) { // warning! this is not an API endpoint
-        if (Authorizations.writeGranted(this.HttpContext, Authorizations.user())) {
-            this.repository.keepByFilter((User) => User.Id != id);
-            let previousAuthorization = this.authorizations;
+        if (Authorizations.writeGranted(this.HttpContext, Authorizations.user()))
+        {
+            const previousAuthorizations = this.authorizations;
             this.authorizations = Authorizations.user();
             super.remove(id);
-            this.authorizations = previousAuthorization;
+            this.authorizations = previousAuthorizations;
         }
     }
 }
