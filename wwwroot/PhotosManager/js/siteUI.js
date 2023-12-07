@@ -374,9 +374,7 @@ function renderEditProfileForm() {
         <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
         </div>
         <div class="cancel"> <hr>
-        <a href="confirmDeleteProfil.php">
-        <button class="form-control btn-warning">Effacer le compte</button>
-        </a>
+        <button id="deleteAccount" class="form-control btn-warning">Effacer le compte</button>
         </div>
     `);
 
@@ -384,6 +382,12 @@ function renderEditProfileForm() {
     initImageUploaders();
     $('#abortCmd').on('click', () => renderPhotos()); // call back sur clic
     // ajouter le mécanisme de vérification de doublon de courriel
+    $('#deleteAccount').click(async () => {
+        if (await API.unsubscribeAccount(loggedUser.Id))
+            renderLoginForm(); //TO-DO: retourner a la page d'Avant
+        else
+            renderErrorMessage("Error deleting user...");
+    });
 
     addConflictValidation(API.checkConflictURL(), 'Email', 'saveUser');
     // call back la soumission du formulaire
