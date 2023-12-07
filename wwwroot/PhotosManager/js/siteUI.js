@@ -121,7 +121,7 @@ function updateHeader(text, updateType = "default") {
                 <i title="Modifier votre profil">
                     <div class="UserAvatarSmall" userid="${loggedUser.Id}" id="editProfilCmd"
                     style="background-image:url('${loggedUser.Avatar}')"
-                    title="Nicolas Chourot">
+                    title="${loggedUser.Name}">
                     </div>
                 </i>
                 <div class="dropdown ms-auto">
@@ -168,7 +168,7 @@ function renderAbout() {
                         d'interface utilisateur monopage réactive.
                         </p>
                         <p>
-                        Auteur: Nicolas Chourot
+                        Auteur: Alexandre Lacombe, Jérémy Deschamps
                         </p>
                         <p>
                         Collège Lionel-Groulx, automne 2023
