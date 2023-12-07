@@ -26,7 +26,7 @@ export default class Repository {
     }
     newETag() {
         this.ETag = uuidv1();
-        repositoryEtags[this.objectsName] = this.ETag;
+        global.repositoryEtags[this.objectsName] = this.ETag;
     }
     objects() {
         if (this.objectsList == null) this.read();
