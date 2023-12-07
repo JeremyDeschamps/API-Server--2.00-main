@@ -20,8 +20,8 @@ export default class Repository {
         this.cached = cached;
     }
     initEtag() {
-        if (this.objectsName in repositoryEtags)
-            this.ETag = repositoryEtags[this.objectsName];
+        if (this.objectsName in global.repositoryEtags)
+            this.ETag = global.repositoryEtags[this.objectsName];
         else this.newETag();
     }
     newETag() {
