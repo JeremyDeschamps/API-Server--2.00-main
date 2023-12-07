@@ -85,7 +85,6 @@ export default
         }
         return null;
     }
-
 }
 
 // periodic cleaning of expired tokens
