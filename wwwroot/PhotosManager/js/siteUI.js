@@ -90,7 +90,7 @@ function updateHeader(text, updateType = "default") {
                 <i title="Modifier votre profil">
                     <div class="UserAvatarSmall" userid="${loggedUser.Id}" id="editProfilCmd"
                     style="background-image:url('${loggedUser.Avatar}')"
-                    title="Nicolas Chourot">
+                    title="${loggedUser.Name}">
                     </div>
                 </i>
                 <div class="dropdown ms-auto">
