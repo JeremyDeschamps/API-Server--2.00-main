@@ -333,16 +333,18 @@ function renderPhotos() {
     const photos = API.GetPhotos(query);
     $("#content").append(`<div class="photosLayout"></div>`);
     const container = $(".photosLayout");
-    for (const photo of photos) {
-        container.append(`
-        <div class="photoLayout">
-            <div class="photosTitleContainer">
-                <span class="photoTitle">${photo.Title}</span>
-            </div>
-            <img class="photoImage" src="${photo.Url}">
-            <div class="photoCreationDate">${photo.Date}</div>
-            <div class="likesSummary">likes</div>
-        </div>`);
+    if(photos != undefined) {
+        for (const photo of photos) {
+            container.append(`
+            <div class="photoLayout">
+                <div class="photosTitleContainer">
+                    <span class="photoTitle">${photo.Title}</span>
+                </div>
+                <img class="photoImage" src="${photo.Url}">
+                <div class="photoCreationDate">${photo.Date}</div>
+                <div class="likesSummary">likes</div>
+            </div>`);
+        }
     }
 }
 function renderEditProfileForm() {
@@ -685,8 +687,9 @@ function renderAddPhoto(){
     timeout();
     eraseContent();
     updateHeader("Creation de Photo");
+
     $("#content").append(`
-        <form class="form" id="adPhotodForm"'>
+        <form class="form" id="addPhotodForm"'>
         <fieldset>
         <legend>Information</legend>
         <input type="text"
@@ -704,16 +707,16 @@ function renderAddPhoto(){
         id="Description"
         placeholder="Description"
         required
-        RequireMessage = 'Veuillez entrer un titre'
-        InvalidMessage = 'Titre invalide'
+        RequireMessage = 'Veuillez entrer une description'
+        InvalidMessage = 'Description invalide'
         value="" ></textarea>
         </fieldset>
         <fieldset>
-        <legend>Photo</legend>
+        <legend>Image</legend>
         <div class='imageUploader'
-        newImage='false'
-        controlId='Photo'
-        imageSrc=''
+        newImage='true'
+        controlId='Image'
+        imageSrc='images/photoCloudLogo.png'
         waitingImage="images/Loading_icon.gif">
         </div>
         </fieldset>
@@ -726,10 +729,24 @@ function renderAddPhoto(){
         <div class="cancel">
         <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
         </div>
-        <div class="cancel"> <hr>
-        <button id="deleteAccount" class="form-control btn-warning">Effacer le compte</button>
-        </div>
     `);
+    initFormValidation();
+    initImageUploaders();
+    $("#abortCmd").click(() => renderPhotos());
+
+    $('#addPhotodForm').on("submit", async function (event) {
+        let photo = getFormData($('#addPhotodForm'));
+
+        event.preventDefault();// empêcher le fureteur de soumettre une requête de soumission
+        showWaitingGif(); // afficher GIF d’attente
+        const result = await API.CreatePhoto(photo); // commander la création au service API
+
+        if (result) {
+            renderPhotos();
+        }
+        else
+            renderErrorMessage(API.currentHttpError);
+    });
 }
 
 
