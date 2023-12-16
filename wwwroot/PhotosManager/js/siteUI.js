@@ -794,8 +794,6 @@ function renderAddPhoto(){
             renderErrorMessage(API.currentHttpError);
     });
 }
-
-
 class DropdownMenu {
     constructor(appendTo) {
         this.appendTo = appendTo;
