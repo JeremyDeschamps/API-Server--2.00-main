@@ -1,10 +1,20 @@
-let contentScrollPosition = 0;
-let dropdown;
+const FilterType = {
+    date: "date",
+    owners: "owners",
+    likes: "likes",
+    self: "self",
+    none: "none",
+}
 const ContentType = {
     login: "login",
     signup: "signup",
 
 }
+
+let contentScrollPosition = 0;
+let dropdown;
+let filter = FilterType.none;
+
 $(document).ready(() => initUI());
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Views rendering
@@ -202,6 +212,8 @@ function renderVerificationForm(VerifError = "") {
         const verify = await API.verifyEmail(user.Id, verifyData.VerifyCode);
         if (verify) {
             user.VerifyCode = "verified";
+            filter = FilterType.none;
+            contentScrollPosition = 0;
             renderPhotos();
         }
         else
@@ -251,6 +263,8 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
             if (user.VerifyCode === "unverified")
                 renderVerificationForm();
             else {
+                filter = FilterType.none;
+                contentScrollPosition = 0;
                 renderPhotos();
             }
         }
@@ -288,10 +302,42 @@ function renderPhotos() {
     else
         updateHeader("Photos", "logged");
 
-    /**TODO
-     *Ajout PhotoPage
-     */
-    $("#content").append("<p>Main page</p>");
+    let query;
+    switch (filter) {
+        case FilterType.date:
+            query = "?sort=Date";
+            break;
+
+        case FilterType.owners:
+            query = "?sort=OwnerName";
+            break;
+    
+        case FilterType.likes:
+            query = "?sort=Owner";
+            break;
+
+        case FilterType.self:
+            query = "?OwnerId=" + user.Id;
+            break;
+
+        case FilterType.none:
+            query = "";
+            break;
+    }
+    const photos = API.GetPhotos(query);
+    $("#content").append(`<div class="photosLayout"></div>`);
+    const container = $(".photosLayout");
+    for (const photo of photos) {
+        container.append(`
+        <div class="photoLayout">
+            <div class="photosTitleContainer">
+                <span class="photoTitle">${photo.Title}</span>
+            </div>
+            <img class="photoImage" src="${photo.Url}">
+            <div class="photoCreationDate">${photo.Date}</div>
+            <div class="likesSummary">likes</div>
+        </div>`);
+    }
 }
 function renderEditProfileForm() {
     const loggedUser = API.retrieveLoggedUser();
@@ -687,22 +733,22 @@ class DropdownMenu {
         this.addItem("editProfileDropdownBtn", "Modifier le profil", "fa-user-edit", () => renderEditProfileForm());
     }
     listPictures() {
-        this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image", () => renderPhotos());
+        this.addItem("listPicturesDrodownBtn", "Liste des photos", "fa-image", () => {contentScrollPosition = 0; filter = FilterType.none; renderPhotos()});
     }
     manageUsers() {
         this.addItem("managerUsersDropdownBtn", "Gestion des usagers", "fa-user-cog", () => manageUsers());
     }
-    sortByDate(selected) {
-        this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar", () => renderPhotos(), selected);
+    sortByDate() {
+        this.addItem("sortByDateDropdownBtn", "Photos par date de création", "fa-calendar", () => {contentScrollPosition = 0; filter = FilterType.date; renderPhotos()}, filter === FilterType.date);
     }
-    sortByOwners(selected) {
-        this.addItem("sortByOwnerDropdownBtn", "Photos par créateur", "fa-users", () => renderPhotos(), selected); //TODO: programatically sort pictures
+    sortByOwners() {
+        this.addItem("sortByOwnerDropdownBtn", "Photos par créateur", "fa-users", () => {contentScrollPosition = 0; filter = FilterType.owners; renderPhotos()}, filter === FilterType.owners);
     }
-    sortByLikes(selected) {
-        this.addItem("sortByLikesDropdownBtn", "Photos les plus aimées", "fa-heart", () => renderPhotos(), selected);
+    sortByLikes() {
+        this.addItem("sortByLikesDropdownBtn", "Photos les plus aimées", "fa-heart", () => {contentScrollPosition = 0; filter = FilterType.likes; renderPhotos()}, filter === FilterType.likes);
     }
-    sortBySelf(selected) {
-        this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user", () => renderPhotos(), selected);
+    sortBySelf() {
+        this.addItem("sortBySelfDropdownBtn", "Mes photos", "fa-user", () => {contentScrollPosition = 0; filter = FilterType.self; renderPhotos()}, filter === FilterType.self);
     }
     divider() {
         this.appendTo.append(`<div class="dropdown-divider"></div>`);

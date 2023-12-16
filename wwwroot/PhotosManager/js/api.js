@@ -1,6 +1,7 @@
 ////////////////////////////////////////////// API photos_APIs call ///////////////////////////////////////////////////////
 
-const serverHost = "https://scintillating-boiling-minibus.glitch.me";
+// const serverHost = "https://scintillating-boiling-minibus.glitch.me";
+const serverHost = "http://127.0.0.1:5000";
 const photos_API = "/api/photos";
 
 class API {
