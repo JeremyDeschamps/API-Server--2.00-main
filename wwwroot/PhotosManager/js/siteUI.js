@@ -144,6 +144,7 @@ function updateHeader(text, updateType = "default") {
             </div>
             `)
         );
+
         dropdown = new DropdownMenu($("#dropdown"));
         dropdown.adminMenu();
     }
@@ -155,6 +156,11 @@ function updateHeader(text, updateType = "default") {
     const listPhotosBtn = $("#listPhotosCmd");
     if (listPhotosBtn.length !== 0)
         listPhotosBtn.click(() => renderPhotos());
+
+    const addPhotoBtn = $("#newPhotoCmd");
+    if (addPhotoBtn.length !== 0)
+        addPhotoBtn.click(() => renderAddPhoto());
+    
 }
 function renderAbout() {
     const loggedUser = API.retrieveLoggedUser();
@@ -706,6 +712,57 @@ async function changeUserPermissions(user, writeAccess, readAccess) {
     }
 }
 async function deleteUser(user) { renderDeleteUser(user); }
+
+function renderAddPhoto(){
+    timeout();
+    eraseContent();
+    updateHeader("Creation de Photo");
+    $("#content").append(`
+        <form class="form" id="adPhotodForm"'>
+        <fieldset>
+        <legend>Information</legend>
+        <input type="text"
+        class="form-control Alpha"
+        name="title"
+        id="Title"
+        placeholder="Titre"
+        required
+        RequireMessage = 'Veuillez entrer un titre'
+        InvalidMessage = 'Titre invalide'
+        value="">
+        <textarea type="text"
+        class="form-control Alpha"
+        name="description"
+        id="Description"
+        placeholder="Description"
+        required
+        RequireMessage = 'Veuillez entrer un titre'
+        InvalidMessage = 'Titre invalide'
+        value="" ></textarea>
+        </fieldset>
+        <fieldset>
+        <legend>Photo</legend>
+        <div class='imageUploader'
+        newImage='false'
+        controlId='Photo'
+        imageSrc=''
+        waitingImage="images/Loading_icon.gif">
+        </div>
+        </fieldset>
+        <input type='submit'
+        name='submit'
+        id='saveUserCmd'
+        value="Enregistrer"
+        class="form-control btn-primary">
+        </form>
+        <div class="cancel">
+        <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
+        </div>
+        <div class="cancel"> <hr>
+        <button id="deleteAccount" class="form-control btn-warning">Effacer le compte</button>
+        </div>
+    `);
+}
 
 
 class DropdownMenu {
