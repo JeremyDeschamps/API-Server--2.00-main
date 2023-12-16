@@ -9,4 +9,5 @@ export default class Like extends Model {
         this.addField('OwnerId', 'string');
         this.addField('PhotoId', 'string');
     }
+    
 }
