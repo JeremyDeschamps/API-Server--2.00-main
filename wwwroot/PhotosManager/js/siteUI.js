@@ -716,7 +716,13 @@ async function deleteUser(user) { renderDeleteUser(user); }
 function renderAddPhoto(){
     timeout();
     eraseContent();
-    updateHeader("Creation de Photo");
+    const user = API.retrieveLoggedUser();
+
+    if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
+        updateHeader("Photos", "admin");
+    else
+        updateHeader("Photos", "logged");
+    
     const loggedUser = API.retrieveLoggedUser();
 
     $("#content").append(`
