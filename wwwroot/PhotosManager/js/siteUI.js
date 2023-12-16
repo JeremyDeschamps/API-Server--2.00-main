@@ -351,6 +351,8 @@ async function renderPhotos() {
         <div class="photoLayout">
             <div class="photosTitleContainer">
                 <span class="photoTitle">${photo.Title}</span>
+                <span class="editCmd cmdIcon fa fa-pencil" title="Modifier"></span>
+                <span class="deleteCmd cmdIcon fa fa-trash" title="Effacer"></span>
             </div>
             <div class="photoImage" style="background-image: url(${photo.Image})">
                 <div class="UserAvatarSmall" style="background-image: url(${photo.OwnerAvatar})"></div>
@@ -364,6 +366,14 @@ async function renderPhotos() {
         </div>`);
         const photoHTML = container.children().last();
         photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo));
+
+        if(photo.OwnerId !== user.Id) {
+            photoHTML.find(".editCmd").hide();
+            photoHTML.find(".deleteCmd").hide();
+        }
+
+        photoHTML.find(".editCmd").click(() => renderEditPhoto(photo));
+        photoHTML.find(".deleteCmd").click(() => renderDeletePhoto(photo));
     }
 }
 function renderAddPhoto() {
@@ -378,7 +388,7 @@ function renderAddPhoto() {
 
 
     $("#content").append(`
-        <form class="form" id="addPhotodForm"'>
+        <form class="form" id="addPhotoForm"'>
         <fieldset>
         <legend>Information</legend>
         <input type="text"
@@ -412,10 +422,9 @@ function renderAddPhoto() {
         waitingImage="images/Loading_icon.gif">
         </div>
         </fieldset>
-
         <input type='submit'
         name='submit'
-        id='saveUserCmd'
+        id='addPhotoCmd'
         value="Enregistrer"
         class="form-control btn-primary">
         </form>
@@ -427,8 +436,8 @@ function renderAddPhoto() {
     initImageUploaders();
     $("#abortCmd").click(() => renderPhotos());
 
-    $('#addPhotodForm').on("submit", async function (event) {
-        let photo = getFormData($('#addPhotodForm'));
+    $('#addPhotoForm').on("submit", async function (event) {
+        let photo = getFormData($('#addPhotoForm'));
 
         photo.OwnerId = loggedUser.Id
         photo.Date = Date.now();
@@ -446,11 +455,10 @@ function renderAddPhoto() {
             renderErrorMessage(API.currentHttpError);
     });
 }
-function renderEditPhoto(id){
+function renderEditPhoto(photo){
     timeout();
     eraseContent();
     const user = API.retrieveLoggedUser();
-    const photo = API.GetPhotosById(id);
     if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
         updateHeader("Photos", "admin");
     else
@@ -476,8 +484,8 @@ function renderEditPhoto(id){
         placeholder="Description"
         required
         RequireMessage = 'Veuillez entrer une description'
-        InvalidMessage = 'Description invalide'
-        value="${photo.Description}" ></textarea>
+        InvalidMessage = 'Description invalide' 
+        >${photo.Description}</textarea>
         <br>
         <input type="checkbox" name="sharedCheck" id="sharedCheck"><label for="shared">Partager</label>
         <br>
@@ -508,16 +516,17 @@ function renderEditPhoto(id){
     $("#abortCmd").click(() => renderPhotos());
 
     $('#modifyPhotodForm').on("submit", async function (event) {
-        let photo = getFormData($('#addPhotodForm'));
+        let photoModified = getFormData($('#modifyPhotodForm'));
 
-        photo.OwnerId = loggedUser.Id
-        photo.Date = Date.now();
-        photo.Shared = $("#sharedCheck").is(':checked');
+        photoModified.Id = photo.Id
+        photoModified.OwnerId = user.Id
+        photoModified.Date = Date.now();
+        photoModified.Shared = $("#sharedCheck").is(':checked');
 
 
         event.preventDefault();//  empêcher le fureteur de soumettre une requête de soumission
         showWaitingGif(); // afficher GIF d’attente
-        const result = await API.UpdatePhoto(photo); // commander la création au service API
+        const result = await API.UpdatePhoto(photoModified); // commander la création au service API
 
         if (result) {
             renderPhotos();
@@ -525,6 +534,35 @@ function renderEditPhoto(id){
         else
             renderErrorMessage(API.currentHttpError);
     });
+}
+function renderDeletePhoto(photo) {
+    noTimeout();
+    eraseContent();
+    updateHeader("Retrait de compte", "logged");
+    $("#content").append(
+        $(`
+        <div class="content form" style="text-align:center">
+        <h3>Voulez vous vraiment effacer cet usager et toutes ses photos ?</h3>
+        <div class="UserLayout">
+            <div class"UserInfo">
+                <div class="UserName">${photo.Title}</div>
+                <img class="UserAvatar" src="${photo.Image}">
+            </div>
+        </div>
+        <button class="form-control btn-danger" id="effacerButton">Effacer</button>
+        <br>
+        <button class="form-control btn-secondary" id="annulerButton">Annuler</button>
+        </div>
+        `)
+    );
+    $("#effacerButton").click(async () => {
+        if (await API.DeletePhoto(photo))
+            renderPhotos(); //TO-DO: retourner a la page d'Avant
+        else
+            renderErrorMessage("Deletion not completed and Error");
+
+    });
+    $("#annulerButton").click(() => renderPhotos());
 }
 function renderPhotosDetails(photo) {
     timeout();
