@@ -330,22 +330,52 @@ function renderPhotos() {
             query = "";
             break;
     }
-    const photos = API.GetPhotos(query);
+    // const photos = API.GetPhotos(query);
+    const photos = [
+        {
+            Title: "Ta mère en short",
+            Url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRT6bZMOCVGXGWmAzgHwOxq-A4lUTNWke-GiixH6D-bGEbFehiPcwzukWlhnbXlqyXeejk&usqp=CAU",
+            Date: "1 mai dsld",
+            OwnerName: "Chourot",
+            Description: "asdf",
+        },
+        {
+            Title: "Ta mère en short",
+            Url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRT6bZMOCVGXGWmAzgHwOxq-A4lUTNWke-GiixH6D-bGEbFehiPcwzukWlhnbXlqyXeejk&usqp=CAU",
+            Date: "1 mai dsld",
+        },
+        {
+            Title: "Ta mère en short",
+            Url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRT6bZMOCVGXGWmAzgHwOxq-A4lUTNWke-GiixH6D-bGEbFehiPcwzukWlhnbXlqyXeejk&usqp=CAU",
+            Date: "1 mai dsld",
+        },
+    ];
     $("#content").append(`<div class="photosLayout"></div>`);
     const container = $(".photosLayout");
-    if(photos != undefined) {
-        for (const photo of photos) {
-            container.append(`
-            <div class="photoLayout">
-                <div class="photosTitleContainer">
-                    <span class="photoTitle">${photo.Title}</span>
-                </div>
-                <img class="photoImage" src="${photo.Url}">
-                <div class="photoCreationDate">${photo.Date}</div>
-                <div class="likesSummary">likes</div>
-            </div>`);
-        }
+    for (const photo of photos) {
+        container.append(`
+        <div class="photoLayout">
+            <div class="photosTitleContainer">
+                <span class="photoTitle">${photo.Title}</span>
+            </div>
+            <img class="photoImage" src="${photo.Url}">
+            <div class="photoCreationDate">${photo.Date} <span class="likesSummary">likes</span></div>
+        </div>`);
+        const photoHTML = container.children().last();
+        photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo));
     }
+}
+function renderPhotosDetails(photo) {
+    timeout();
+    eraseContent();
+    $("#content").append(`
+        <div class="photoDetailsOwner">${photo.OwnerName}</div>
+        <hr>
+        <div class="photoDetailsTitle">${photo.Title}</div>
+        <img class="photoDetailsLargeImage" src=${photo.Url}>
+        <div class="photoCreationDate">${photo.Date} <span class="likesSummary">likes</span></div>
+        <div class="photoDetailsDescription">${photo.Description} </div>
+    `);
 }
 function renderEditProfileForm() {
     const loggedUser = API.retrieveLoggedUser();
