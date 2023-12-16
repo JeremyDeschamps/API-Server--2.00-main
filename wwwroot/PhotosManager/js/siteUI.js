@@ -717,6 +717,7 @@ function renderAddPhoto(){
     timeout();
     eraseContent();
     updateHeader("Creation de Photo");
+    const loggedUser = API.retrieveLoggedUser();
 
     $("#content").append(`
         <form class="form" id="addPhotodForm"'>
@@ -724,7 +725,7 @@ function renderAddPhoto(){
         <legend>Information</legend>
         <input type="text"
         class="form-control Alpha"
-        name="title"
+        name="Title"
         id="Title"
         placeholder="Titre"
         required
@@ -733,13 +734,16 @@ function renderAddPhoto(){
         value="">
         <textarea type="text"
         class="form-control Alpha"
-        name="description"
+        name="Description"
         id="Description"
         placeholder="Description"
         required
         RequireMessage = 'Veuillez entrer une description'
         InvalidMessage = 'Description invalide'
         value="" ></textarea>
+        <br>
+        <input type="checkbox" name="sharedCheck" id="sharedCheck"><label for="shared">Partager</label>
+        <br>
         </fieldset>
         <fieldset>
         <legend>Image</legend>
@@ -750,6 +754,7 @@ function renderAddPhoto(){
         waitingImage="images/Loading_icon.gif">
         </div>
         </fieldset>
+
         <input type='submit'
         name='submit'
         id='saveUserCmd'
@@ -767,7 +772,12 @@ function renderAddPhoto(){
     $('#addPhotodForm').on("submit", async function (event) {
         let photo = getFormData($('#addPhotodForm'));
 
-        event.preventDefault();// empêcher le fureteur de soumettre une requête de soumission
+        photo.OwnerId = loggedUser.Id
+        photo.Date = Date.now();
+        photo.Shared = $("#sharedCheck").is(':checked');
+
+
+        event.preventDefault();//  empêcher le fureteur de soumettre une requête de soumission
         showWaitingGif(); // afficher GIF d’attente
         const result = await API.CreatePhoto(photo); // commander la création au service API
 

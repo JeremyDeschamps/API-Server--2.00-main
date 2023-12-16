@@ -201,7 +201,7 @@ class API {
                     resolve({ data, ETag });
                 },
                 error: xhr => { API.setHttpErrorState(xhr); resolve(false); }
-            });
+            }); 
         });
     }
     static CreatePhoto(data) {
