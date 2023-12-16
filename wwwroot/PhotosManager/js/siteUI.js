@@ -366,6 +366,166 @@ async function renderPhotos() {
         photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo));
     }
 }
+function renderAddPhoto() {
+    timeout();
+    eraseContent();
+    const user = API.retrieveLoggedUser();
+
+    if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
+        updateHeader("Photos", "admin");
+    else
+        updateHeader("Photos", "logged");
+
+
+    $("#content").append(`
+        <form class="form" id="addPhotodForm"'>
+        <fieldset>
+        <legend>Information</legend>
+        <input type="text"
+        class="form-control Alpha"
+        name="Title"
+        id="Title"
+        placeholder="Titre"
+        required
+        RequireMessage = 'Veuillez entrer un titre'
+        InvalidMessage = 'Titre invalide'
+        value="">
+        <textarea type="text"
+        class="form-control Alpha"
+        name="Description"
+        id="Description"
+        placeholder="Description"
+        required
+        RequireMessage = 'Veuillez entrer une description'
+        InvalidMessage = 'Description invalide'
+        value="" ></textarea>
+        <br>
+        <input type="checkbox" name="sharedCheck" id="sharedCheck"><label for="shared">Partager</label>
+        <br>
+        </fieldset>
+        <fieldset>
+        <legend>Image</legend>
+        <div class='imageUploader'
+        newImage='true'
+        controlId='Image'
+        imageSrc='images/photoCloudLogo.png'
+        waitingImage="images/Loading_icon.gif">
+        </div>
+        </fieldset>
+
+        <input type='submit'
+        name='submit'
+        id='saveUserCmd'
+        value="Enregistrer"
+        class="form-control btn-primary">
+        </form>
+        <div class="cancel">
+        <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
+        </div>
+    `);
+    initFormValidation();
+    initImageUploaders();
+    $("#abortCmd").click(() => renderPhotos());
+
+    $('#addPhotodForm').on("submit", async function (event) {
+        let photo = getFormData($('#addPhotodForm'));
+
+        photo.OwnerId = loggedUser.Id
+        photo.Date = Date.now();
+        photo.Shared = $("#sharedCheck").is(':checked');
+
+
+        event.preventDefault();//  empêcher le fureteur de soumettre une requête de soumission
+        showWaitingGif(); // afficher GIF d’attente
+        const result = await API.CreatePhoto(photo); // commander la création au service API
+
+        if (result) {
+            renderPhotos();
+        }
+        else
+            renderErrorMessage(API.currentHttpError);
+    });
+}
+function renderEditPhoto(id){
+    timeout();
+    eraseContent();
+    const user = API.retrieveLoggedUser();
+    const photo = API.GetPhotosById(id);
+    if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
+        updateHeader("Photos", "admin");
+    else
+        updateHeader("Photos", "logged");
+
+
+    $("#content").append(`
+        <form class="form" id="modifyPhotodForm"'>
+        <fieldset>
+        <legend>Information</legend>
+        <input type="text"
+        class="form-control Alpha"
+        name="Title"
+        id="Title"
+        required
+        RequireMessage = 'Veuillez entrer un titre'
+        InvalidMessage = 'Titre invalide'
+        value="${photo.Title}">
+        <textarea type="text"
+        class="form-control Alpha"
+        name="Description"
+        id="Description"
+        placeholder="Description"
+        required
+        RequireMessage = 'Veuillez entrer une description'
+        InvalidMessage = 'Description invalide'
+        value="${photo.Description}" ></textarea>
+        <br>
+        <input type="checkbox" name="sharedCheck" id="sharedCheck"><label for="shared">Partager</label>
+        <br>
+        </fieldset>
+        <fieldset>
+        <legend>Image</legend>
+        <div class='imageUploader'
+        newImage='true'
+        controlId='Image'
+        imageSrc='${photo.Image}'
+        waitingImage="images/Loading_icon.gif">
+        </div>
+        </fieldset>
+        <input type='submit'
+        name='submit'
+        id='saveUserCmd'
+        value="Enregistrer"
+        class="form-control btn-primary">
+        </form>
+        <div class="cancel">
+        <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
+        </div>
+    `);
+    if(photo.Shared)
+        photo.Shared = $("#sharedCheck").prop("checked",true);
+    initFormValidation();
+    initImageUploaders();
+    $("#abortCmd").click(() => renderPhotos());
+
+    $('#modifyPhotodForm').on("submit", async function (event) {
+        let photo = getFormData($('#addPhotodForm'));
+
+        photo.OwnerId = loggedUser.Id
+        photo.Date = Date.now();
+        photo.Shared = $("#sharedCheck").is(':checked');
+
+
+        event.preventDefault();//  empêcher le fureteur de soumettre une requête de soumission
+        showWaitingGif(); // afficher GIF d’attente
+        const result = await API.UpdatePhoto(photo); // commander la création au service API
+
+        if (result) {
+            renderPhotos();
+        }
+        else
+            renderErrorMessage(API.currentHttpError);
+    });
+}
 function renderPhotosDetails(photo) {
     timeout();
     eraseContent();
@@ -719,87 +879,7 @@ async function changeUserPermissions(user, writeAccess, readAccess) {
 }
 async function deleteUser(user) { renderDeleteUser(user); }
 
-function renderAddPhoto() {
-    timeout();
-    eraseContent();
-    const user = API.retrieveLoggedUser();
 
-    if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
-        updateHeader("Photos", "admin");
-    else
-        updateHeader("Photos", "logged");
-
-    const loggedUser = API.retrieveLoggedUser();
-
-    $("#content").append(`
-        <form class="form" id="addPhotodForm"'>
-        <fieldset>
-        <legend>Information</legend>
-        <input type="text"
-        class="form-control Alpha"
-        name="Title"
-        id="Title"
-        placeholder="Titre"
-        required
-        RequireMessage = 'Veuillez entrer un titre'
-        InvalidMessage = 'Titre invalide'
-        value="">
-        <textarea type="text"
-        class="form-control Alpha"
-        name="Description"
-        id="Description"
-        placeholder="Description"
-        required
-        RequireMessage = 'Veuillez entrer une description'
-        InvalidMessage = 'Description invalide'
-        value="" ></textarea>
-        <br>
-        <input type="checkbox" name="sharedCheck" id="sharedCheck"><label for="shared">Partager</label>
-        <br>
-        </fieldset>
-        <fieldset>
-        <legend>Image</legend>
-        <div class='imageUploader'
-        newImage='true'
-        controlId='Image'
-        imageSrc='images/photoCloudLogo.png'
-        waitingImage="images/Loading_icon.gif">
-        </div>
-        </fieldset>
-
-        <input type='submit'
-        name='submit'
-        id='saveUserCmd'
-        value="Enregistrer"
-        class="form-control btn-primary">
-        </form>
-        <div class="cancel">
-        <button class="form-control btn-secondary" id="abortCmd">Annuler</button>
-        </div>
-    `);
-    initFormValidation();
-    initImageUploaders();
-    $("#abortCmd").click(() => renderPhotos());
-
-    $('#addPhotodForm').on("submit", async function (event) {
-        let photo = getFormData($('#addPhotodForm'));
-
-        photo.OwnerId = loggedUser.Id
-        photo.Date = Date.now();
-        photo.Shared = $("#sharedCheck").is(':checked');
-
-
-        event.preventDefault();//  empêcher le fureteur de soumettre une requête de soumission
-        showWaitingGif(); // afficher GIF d’attente
-        const result = await API.CreatePhoto(photo); // commander la création au service API
-
-        if (result) {
-            renderPhotos();
-        }
-        else
-            renderErrorMessage(API.currentHttpError);
-    });
-}
 
 
 class DropdownMenu {
