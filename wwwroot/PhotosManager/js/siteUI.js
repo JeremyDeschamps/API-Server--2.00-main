@@ -21,7 +21,7 @@ $(document).ready(() => initUI());
 function initUI() {
     initHeader("Connexion", "default");
     renderLoginForm();
-    initTimeout(100, () => renderLoginForm("Votre session est expirée. Veuillez vous reconnecter."));
+    initTimeout(9999999999999999, () => renderLoginForm("Votre session est expirée. Veuillez vous reconnecter."));
 }
 function showWaitingGif() {
     eraseContent();
@@ -293,20 +293,12 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
                 default:
                     renderErrorMessage("Le serveur ne répond pas");
                     break;
+                }
             }
-        }
-    });
-    $("#createProfilCmd").click(() => renderSignUpForm());
+        });
+        $("#createProfilCmd").click(() => renderSignUpForm());
 }
-function renderPhotos() {
-    timeout();
-    eraseContent();
-    const user = API.retrieveLoggedUser();
-
-    if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
-        updateHeader("Photos", "admin");
-    else
-        updateHeader("Photos", "logged");
+async function renderPhotos() {
 
     let query;
     switch (filter) {
@@ -330,36 +322,45 @@ function renderPhotos() {
             query = "";
             break;
     }
-    // const photos = API.GetPhotos(query);
-    const photos = [
-        {
-            Title: "Ta mère en short",
-            Url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRT6bZMOCVGXGWmAzgHwOxq-A4lUTNWke-GiixH6D-bGEbFehiPcwzukWlhnbXlqyXeejk&usqp=CAU",
-            Date: "1 mai dsld",
-            OwnerName: "Chourot",
-            Description: "asdf",
-        },
-        {
-            Title: "Ta mère en short",
-            Url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRT6bZMOCVGXGWmAzgHwOxq-A4lUTNWke-GiixH6D-bGEbFehiPcwzukWlhnbXlqyXeejk&usqp=CAU",
-            Date: "1 mai dsld",
-        },
-        {
-            Title: "Ta mère en short",
-            Url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRT6bZMOCVGXGWmAzgHwOxq-A4lUTNWke-GiixH6D-bGEbFehiPcwzukWlhnbXlqyXeejk&usqp=CAU",
-            Date: "1 mai dsld",
-        },
-    ];
+    const photos = await API.GetPhotos(query);
+    const user = await API.retrieveLoggedUser();
+    if (!photos) {
+        const errorMessage = API.currentHttpError;
+        const status = API.currentStatus;
+        
+        await API.logout();
+        renderErrorMessage(errorMessage);
+        return;
+    
+    }
+    timeout();
+    eraseContent();
+
+    if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
+        updateHeader("Photos", "admin");
+    else
+        updateHeader("Photos", "logged");
+
     $("#content").append(`<div class="photosLayout"></div>`);
     const container = $(".photosLayout");
-    for (const photo of photos) {
+    console.log(photos.data);
+    for (const photo of photos.data) {
+        const shared = user.Id === photo.OwnerId && photo.Shared;
+        const wasLikedByUser = true;
         container.append(`
         <div class="photoLayout">
             <div class="photosTitleContainer">
                 <span class="photoTitle">${photo.Title}</span>
             </div>
-            <img class="photoImage" src="${photo.Url}">
-            <div class="photoCreationDate">${photo.Date} <span class="likesSummary">likes</span></div>
+            <div class="photoImage" style="background-image: url(${photo.Image})">
+                <div class="UserAvatarSmall" style="background-image: url(${photo.OwnerAvatar})"></div>
+                ${shared ? `<img class="UserAvatarSmall" src="images/shared.png">` : ""}
+            </div>
+            <div class="photoCreationDate">${convertToFrenchDate(photo.Date)} 
+                <span class="likesSummary">
+                    ${5}<i class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+                </span>
+            </div>
         </div>`);
         const photoHTML = container.children().last();
         photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo));
@@ -368,12 +369,17 @@ function renderPhotos() {
 function renderPhotosDetails(photo) {
     timeout();
     eraseContent();
+    const wasLikedByUser = true;
     $("#content").append(`
         <div class="photoDetailsOwner">${photo.OwnerName}</div>
         <hr>
         <div class="photoDetailsTitle">${photo.Title}</div>
-        <img class="photoDetailsLargeImage" src=${photo.Url}>
-        <div class="photoCreationDate">${photo.Date} <span class="likesSummary">likes</span></div>
+        <img class="photoDetailsLargeImage" src=${photo.Image}>
+        <div class="photoDetailsCreationDate">${convertToFrenchDate(photo.Date)} 
+            <span class="likesSummary">
+                ${5}<i class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+            </span>
+        </div>
         <div class="photoDetailsDescription">${photo.Description} </div>
     `);
 }
@@ -616,7 +622,7 @@ function renderDeleteUser(user) {
     eraseContent();
     updateHeader("Retrait de compte", "logged");
     $("#content").append(
-        $(` 
+        $(`
         <div class="content form" style="text-align:center">
         <h3>Voulez vous vraiment effacer cet usager et toutes ses photos ?</h3>
         <div class="UserLayout">
