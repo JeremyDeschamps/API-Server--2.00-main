@@ -439,18 +439,15 @@ function renderAddPhoto() {
     $('#addPhotoForm').on("submit", async function (event) {
         let photo = getFormData($('#addPhotoForm'));
 
-        photo.OwnerId = loggedUser.Id
+        photo.OwnerId = user.Id
         photo.Date = Date.now();
         photo.Shared = $("#sharedCheck").is(':checked');
-
 
         event.preventDefault();//  empêcher le fureteur de soumettre une requête de soumission
         showWaitingGif(); // afficher GIF d’attente
         const result = await API.CreatePhoto(photo); // commander la création au service API
-
-        if (result) {
+        if (result) 
             renderPhotos();
-        }
         else
             renderErrorMessage(API.currentHttpError);
     });
@@ -556,7 +553,7 @@ function renderDeletePhoto(photo) {
         `)
     );
     $("#effacerButton").click(async () => {
-        if (await API.DeletePhoto(photo))
+        if (await API.DeletePhoto(photo.Id))
             renderPhotos(); //TO-DO: retourner a la page d'Avant
         else
             renderErrorMessage("Deletion not completed and Error");
