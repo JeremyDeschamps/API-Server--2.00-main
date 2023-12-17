@@ -2,14 +2,16 @@ import Controller from './Controller.js';
 import LikesModel from '../models/like.js';
 import Authorizations from '../authorizations.js';
 import TokensManager from '../tokensManager.js';
+import Repository from '../models/repository.js';
 
 export default class LikesController extends Controller {
     constructor(HttpContext) {
         super(HttpContext, new Repository(new LikesModel()), Authorizations.admin);
     }
 
-    add(photoId)
+    add(data)
     {
+        console.log("abc");
         if (!Authorizations.writeGranted(this.HttpContext, Authorizations.user())) {
             this.HttpContext.response.forbidden("Not the right permissions for this");
             return;
@@ -24,16 +26,17 @@ export default class LikesController extends Controller {
             this.HttpContext.response.unAuthorized("Invalid token");
             return;
         }
-        if (this.repository.findByFilter(`PhotoId=${photoId},userId=${token.User.Id}`) === null) {
+        if (this.repository.findByFilter((like) => like.PhotoId === data.PhotoId && like.OwnerId === token.User.Id).length !== 0) {
             this.HttpContext.response.conflict("The photo was already liked");
             return;
         }
 
-        this.repository.add({PhotoId: photoId, OwnerId: token.User.Id });
+        this.repository.add({PhotoId: data.PhotoId, OwnerId: token.User.Id });
     }
 
-    remove(likeId)
+    remove(data)
     {
+        console.log("def");
         if (!Authorizations.writeGranted(this.HttpContext, Authorizations.user()))
         {
             this.HttpContext.response.forbidden("Not the right permissions for this");
@@ -44,10 +47,11 @@ export default class LikesController extends Controller {
             this.HttpContext.response.unAuthorized("Invalid token");
             return;
         }
-        if (this.repository.find(likeId).OwnerId !== token.User.Id) {
-            this.HttpContext.responsel.badRequest("Not the owner of this like");
+        const like = this.repository.findByFilter(`PhotoId=${data.PhotoId},userId=${token.User.Id}`);
+        if (like === null) {
+            this.HttpContext.response.badRequest("Not the owner of this like");
+            return;
         }
-        
-        this.repository.remove(likeId);
+        this.repository.remove(like.Id);
     }
 }

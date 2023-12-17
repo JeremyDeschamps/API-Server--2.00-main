@@ -370,7 +370,7 @@ async function renderPhotos() {
 
         const photoHTML = container.children().last();
         photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo, likeList));
-        attachLikeButtonBehaviour(photoHTML.find(".likesSummary"), wasLikedByUser, likeList);
+        attachLikeButtonBehaviour(photoHTML.find(".likesSummary"), wasLikedByUser, likeList, photo.Id);
 
         if(photo.OwnerId !== user.Id) {
             photoHTML.find(".editCmd").hide();
@@ -382,7 +382,7 @@ async function renderPhotos() {
     }
     
 }
-function renderPhotosDetails(photo) {
+function renderPhotosDetails(photo, likeList) {
     timeout();
     eraseContent();
     const wasLikedByUser = photo.Likes.some((like) => like.OwnerId == user.Id);
@@ -398,6 +398,30 @@ function renderPhotosDetails(photo) {
         </div>
         <div class="photoDetailsDescription">${photo.Description} </div>
     `);
+}
+function attachLikeButtonBehaviour(likeButton, pressed, likeList, photoId) {
+
+    const likeListWithUser = likeList.unshift()
+    likeButton.click(async () => {
+        if (pressed) {
+            result = await API.removeLike(photoId);
+            if (result) {
+                likeButton.addAttr("class", "fa-regular");
+            } else {
+                console.log(result);
+                renderErrorMessage(API.currentHttpError);
+            }
+        } else {
+            result = await API.addLike(photoId);
+            if (result) {
+                likeButton.removeAttr("class", "fa-regular");
+            } else {
+                console.log(result);
+                renderErrorMessage(API.currentHttpError);
+            }
+        }
+        pressed = !pressed;
+    });
 }
 function renderAddPhoto() {
     timeout();
@@ -585,29 +609,6 @@ function renderDeletePhoto(photo) {
     $("#annulerButton").click(() => renderPhotos());
 }
 
-
-function attachLikeButtonBehaviour(likeButton, pressed, likeList) {
-
-    const likeListWithUser = likeList.unshift()
-    likeButton.click(async () => {
-        if (pressed) {
-            result = await API.removeLike();
-            if (result) {
-                likeButton.addAttr("class", "fa-regular");
-            } else {
-                renderErrorMessage(API.errorMessage);
-            }
-        } else {
-            result = await API.addLike();
-            if (result) {
-                likeButton.removeAttr("class", "fa-regular");
-            } else {
-                renderErrorMessage(API.errorMessage);
-            }
-        }
-        pressed = !pressed;
-    });
-}
 function renderEditProfileForm() {
     const loggedUser = API.retrieveLoggedUser();
     const type = loggedUser.Authorizations.readAccess === 2 && loggedUser.Authorizations.writeAccess === 2 ? "admin" : "logged";
@@ -719,7 +720,7 @@ function renderEditProfileForm() {
         if (result)
             renderPhotos();
         else
-            renderErrorMessage(API.errorMessage);
+            renderErrorMessage(API.currentHttpError);
     });
 
 }

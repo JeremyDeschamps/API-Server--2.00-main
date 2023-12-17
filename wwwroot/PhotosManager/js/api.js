@@ -249,8 +249,10 @@ class API {
         API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url: serverHost + "/likes/add/" + photoId,
+                url: serverHost + "/likes/add",
                 type: 'PUT',
+                data: {PhotoId: photoId},
+                contentType: 'application/json',
                 headers: API.getBearerAuthorizationToken(),
                 data: JSON.stringify({PhotoId : photoId }),
                 success: () => { resolve(true) },
@@ -258,12 +260,14 @@ class API {
             })
         })
     }
-    static removeLike(likeId) {
+    static removeLike(photoId) {
         API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url: serverHost + "/likes/remove/" + likeId,
+                url: serverHost + "/likes/remove",
                 type: 'DELETE',
+                data: {PhotoId: photoId},
+                contentType: 'application/json',
                 headers: API.getBearerAuthorizationToken(),
                 success: () => { resolve(true) },
                 error: xhr => { API.setHttpErrorState(xhr); resolve(false); }
