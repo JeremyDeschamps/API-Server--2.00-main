@@ -22,7 +22,7 @@ export default class Photo extends Model {
         const usersRepository = new Repository(new UserModel());
         const owner = usersRepository.get(instance.OwnerId);
         const likesRepository = new Repository(new LikeModel());
-        const likes = likesRepository.getAll().filter((like) => like.OwnerId === instance.OwnerId);
+        const likes = likesRepository.getAll().filter((like) => like.PhotoId === instance.Id);
         for (const like of likes) {
             const user = usersRepository.get(like.OwnerId);
             like.Name = user.Name;

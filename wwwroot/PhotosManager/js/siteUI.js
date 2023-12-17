@@ -299,19 +299,20 @@ function renderLoginForm(loginMessage = "", email = "", emailError = "", passwor
     $("#createProfilCmd").click(() => renderSignUpForm());
 }
 async function renderPhotos() {
-
+    const user = await API.retrieveLoggedUser();
     let query;
+
     switch (filter) {
         case FilterType.date:
             query = "?sort=Date";
             break;
 
         case FilterType.owners:
-            query = "?sort=OwnerName";
+            query = "";
             break;
 
         case FilterType.likes:
-            query = "?sort=Owner";
+            query = "";
             break;
 
         case FilterType.self:
@@ -323,7 +324,7 @@ async function renderPhotos() {
             break;
     }
     const photos = await API.GetPhotos(query);
-    const user = await API.retrieveLoggedUser();
+
     if (!photos) {
         const errorMessage = API.currentHttpError;
         const status = API.currentStatus;
@@ -343,12 +344,27 @@ async function renderPhotos() {
 
     $("#content").append(`<div class="photosLayout"></div>`);
     const container = $(".photosLayout");
-    console.log(photos.data);
+
+    switch (filter) {
+        case FilterType.owners:
+            photos.data.sort((x, y) => y.OwnerName > x.OwnerName ? 1 : -1);
+            break;
+
+        case FilterType.likes:
+            photos.data.sort((x, y) => y.Likes.length > x.Likes.length ? 1 : -1);
+            break;
+
+        default: 
+            break;
+    }
+
     for (const photo of photos.data) {
         const shared = user.Id === photo.OwnerId && photo.Shared;
+        photo.Likes.sort(function(x,y){ return x.OwnerId === user.Id ? -1 : y.OwnerId === user.Id ? 1 : 0; });
         const wasLikedByUser = photo.Likes.some((like) => like.OwnerId == user.Id);
 
         const likeList = photo.Likes.map((like) => like.Name);
+        
 
         container.append(`
         <div class="photoLayout">
@@ -358,19 +374,20 @@ async function renderPhotos() {
                 <span class="deleteCmd cmdIcon fa fa-trash" title="Effacer"></span>
             </div>
             <div class="photoImage" style="background-image: url(${photo.Image})">
-                <div class="UserAvatarSmall" style="background-image: url(${photo.OwnerAvatar})"></div>
-                ${shared ? `<img class="UserAvatarSmall" src="images/shared.png">` : ""}
+                <div class="UserAvatarSmall" style="background-image: url(${photo.OwnerAvatar})" title="${photo.OwnerName}"></div>
+                ${shared ? `<img class="UserAvatarSmall" src="images/shared.png" title="Partagé">` : ""}
             </div>
             <div class="photoCreationDate">${convertToFrenchDate(photo.Date)} 
-                <span title="${likeList.slice(0, 10).join("&#10;")}" class="likesSummary">
-                    ${photo.Likes.length}<i class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+                <span class="likesSummary">
+                    <span class="likesCount">${photo.Likes.length}</span>
+                    <i title="${likeList.slice(0, 10).join("&#10;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
                 </span>
             </div>
         </div>`);
 
         const photoHTML = container.children().last();
-        photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo, likeList));
-        attachLikeButtonBehaviour(photoHTML.find(".likesSummary"), wasLikedByUser, likeList, photo.Id);
+        photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo, likeList, user));
+        attachLikeButtonBehaviour(photoHTML.find(".fa-thumbs-up"), photoHTML.find(".likesCount"), wasLikedByUser, likeList, photo.Id, user.Name);
 
         if(photo.OwnerId !== user.Id) {
             photoHTML.find(".editCmd").hide();
@@ -382,7 +399,7 @@ async function renderPhotos() {
     }
     
 }
-function renderPhotosDetails(photo, likeList) {
+function renderPhotosDetails(photo, likeList, user) {
     timeout();
     eraseContent();
     const wasLikedByUser = photo.Likes.some((like) => like.OwnerId == user.Id);
@@ -393,34 +410,42 @@ function renderPhotosDetails(photo, likeList) {
         <img class="photoDetailsLargeImage" src=${photo.Image}>
         <div class="photoDetailsCreationDate">${convertToFrenchDate(photo.Date)} 
             <span class="likesSummary">
-                ${photo.Likes.length}<i title="${likeList.slice(0, 10).join("&#10;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+                <span class="likesCount">${photo.Likes.length}</span>
+                <i title="${likeList.slice(0, 10).join("&#10;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
             </span>
         </div>
         <div class="photoDetailsDescription">${photo.Description} </div>
     `);
+    attachLikeButtonBehaviour($(".fa-thumbs-up"), $(".likesCount"), wasLikedByUser, likeList, photo.Id, user.Name);
 }
-function attachLikeButtonBehaviour(likeButton, pressed, likeList, photoId) {
-
-    const likeListWithUser = likeList.unshift()
+function attachLikeButtonBehaviour(likeButton, likeCount, pressed, likeList, photoId, name) {
     likeButton.click(async () => {
         if (pressed) {
-            result = await API.removeLike(photoId);
+            const result = await API.removeLike(photoId);
             if (result) {
-                likeButton.addAttr("class", "fa-regular");
+                likeButton.removeClass("fa");
+                likeButton.addClass("fa-regular");
+                likeCount.text(Number(likeCount.text()) - 1);
+                likeList.shift();
+                likeButton.attr("title", likeList.slice(0, 10).join("&#10;"));
+                pressed = !pressed;
             } else {
-                console.log(result);
-                renderErrorMessage(API.currentHttpError);
+                console.log(API.currentHttpError);
             }
         } else {
-            result = await API.addLike(photoId);
+            const result = await API.addLike(photoId);
             if (result) {
-                likeButton.removeAttr("class", "fa-regular");
+                likeButton.removeClass("fa-regular");
+                likeButton.addClass("fa");
+                likeCount.text(Number(likeCount.text()) + 1);
+                likeList.unshift(name);
+                likeButton.attr("title", likeList.slice(0, 10).join("&#10;"));
+                pressed = !pressed;
             } else {
-                console.log(result);
-                renderErrorMessage(API.currentHttpError);
+                console.log(API.currentHttpError);
             }
         }
-        pressed = !pressed;
+        
     });
 }
 function renderAddPhoto() {

@@ -39,6 +39,7 @@
     font-size: 18px;
     font-weight: bold;
     color:rgb(0, 87, 204);
+    overflow-wrap: break-word;
 }
 
 .photoDetailsOwner {
@@ -60,6 +61,7 @@
     font-size: 1.2em;
     margin:5px;
     text-align:justify;
+    overflow-wrap: break-word;
 }
 
 .photoCreationDate {

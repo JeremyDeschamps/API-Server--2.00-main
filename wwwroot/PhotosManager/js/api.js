@@ -265,8 +265,8 @@ class API {
         return new Promise(resolve => {
             $.ajax({
                 url: serverHost + "/likes/remove",
-                type: 'DELETE',
-                data: {PhotoId: photoId},
+                type: 'PUT',
+                data: JSON.stringify({PhotoId: photoId}),
                 contentType: 'application/json',
                 headers: API.getBearerAuthorizationToken(),
                 success: () => { resolve(true) },
