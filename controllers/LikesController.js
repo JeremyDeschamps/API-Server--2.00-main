@@ -11,7 +11,6 @@ export default class LikesController extends Controller {
 
     add(data)
     {
-        console.log("abc");
         if (!Authorizations.writeGranted(this.HttpContext, Authorizations.user())) {
             this.HttpContext.response.forbidden("Not the right permissions for this");
             return;
@@ -36,7 +35,6 @@ export default class LikesController extends Controller {
 
     remove(data)
     {
-        console.log("def");
         if (!Authorizations.writeGranted(this.HttpContext, Authorizations.user()))
         {
             this.HttpContext.response.forbidden("Not the right permissions for this");
