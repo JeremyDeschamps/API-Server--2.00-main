@@ -346,7 +346,10 @@ async function renderPhotos() {
     console.log(photos.data);
     for (const photo of photos.data) {
         const shared = user.Id === photo.OwnerId && photo.Shared;
-        const wasLikedByUser = true;
+        const wasLikedByUser = photo.Likes.some((like) => like.OwnerId == user.Id);
+
+        const likeList = photo.Likes.map((like) => like.Name);
+
         container.append(`
         <div class="photoLayout">
             <div class="photosTitleContainer">
@@ -357,19 +360,21 @@ async function renderPhotos() {
                 ${shared ? `<img class="UserAvatarSmall" src="images/shared.png">` : ""}
             </div>
             <div class="photoCreationDate">${convertToFrenchDate(photo.Date)} 
-                <span class="likesSummary">
-                    ${5}<i class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+                <span title="${likeList.slice(0, 10).join("&#10;")}" class="likesSummary">
+                    ${photo.Likes.length}<i class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
                 </span>
             </div>
         </div>`);
+
         const photoHTML = container.children().last();
-        photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo));
+        photoHTML.find(".photoImage").click(() => renderPhotosDetails(photo, likeList));
+        attachLikeButtonBehaviour(photoHTML.find(".likesSummary"), wasLikedByUser, likeList);
     }
 }
-function renderPhotosDetails(photo) {
+async function renderPhotosDetails(photo, likeList) {
     timeout();
     eraseContent();
-    const wasLikedByUser = true;
+    const wasLikedByUser = photo.Likes.some((like) => like.OwnerId == user.Id);
     $("#content").append(`
         <div class="photoDetailsOwner">${photo.OwnerName}</div>
         <hr>
@@ -377,11 +382,34 @@ function renderPhotosDetails(photo) {
         <img class="photoDetailsLargeImage" src=${photo.Image}>
         <div class="photoDetailsCreationDate">${convertToFrenchDate(photo.Date)} 
             <span class="likesSummary">
-                ${5}<i class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+                ${photo.Likes.length}<i title="${likeList.slice(0, 10).join("&#10;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
             </span>
         </div>
         <div class="photoDetailsDescription">${photo.Description} </div>
     `);
+}
+
+function attachLikeButtonBehaviour(likeButton, pressed, likeList) {
+
+    const likeListWithUser = likeList.unshift()
+    likeButton.click(async () => {
+        if (pressed) {
+            result = await API.removeLike();
+            if (result) {
+                likeButton.addAttr("class", "fa-regular");
+            } else {
+                renderErrorMessage(API.errorMessage);
+            }
+        } else {
+            result = await API.addLike();
+            if (result) {
+                likeButton.removeAttr("class", "fa-regular");
+            } else {
+                renderErrorMessage(API.errorMessage);
+            }
+        }
+        pressed = !pressed;
+    });
 }
 function renderEditProfileForm() {
     const loggedUser = API.retrieveLoggedUser();

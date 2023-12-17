@@ -244,4 +244,30 @@ class API {
             });
         });
     }
+
+    static addLike(photoId) {
+        API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url: serverHost + "/likes/add/" + photoId,
+                type: 'PUT',
+                headers: API.getBearerAuthorizationToken(),
+                data: JSON.stringify({PhotoId : photoId }),
+                success: () => { resolve(true) },
+                error: xhr => { API.setHttpErrorState(xhr); resolve(false); }
+            })
+        })
+    }
+    static removeLike(likeId) {
+        API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url: serverHost + "/likes/remove/" + likeId,
+                type: 'DELETE',
+                headers: API.getBearerAuthorizationToken(),
+                success: () => { resolve(true) },
+                error: xhr => { API.setHttpErrorState(xhr); resolve(false); }
+            });
+        });
+    }
 }

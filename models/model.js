@@ -12,8 +12,8 @@ export default class Model {
         this.key = null;
         this.state = { isValid: true, inConflict: false, notFound: false, errors: [] };
     }
-    addField(propertyName, propertyType) {
-        this.fields.push({ name: propertyName, type: propertyType });
+    addField(propertyName, propertyType, unique = false) {
+        this.fields.push({ name: propertyName, type: propertyType, unique: unique });
     }
     isMember(propertyName) {
         let exist = false;

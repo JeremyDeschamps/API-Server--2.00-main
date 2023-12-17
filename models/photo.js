@@ -1,6 +1,7 @@
 import Model from './model.js';
 import UserModel from './user.js';
 import Repository from '../models/repository.js';
+import LikeModel from './like.js';
 
 export default class Photo extends Model {
     constructor()
@@ -18,10 +19,19 @@ export default class Photo extends Model {
 
     bindExtraData(instance) {
         instance = super.bindExtraData(instance);
-        let usersRepository = new Repository(new UserModel());
-        let owner = usersRepository.get(instance.OwnerId);
+        const usersRepository = new Repository(new UserModel());
+        const owner = usersRepository.get(instance.OwnerId);
+        const likesRepository = new Repository(new LikeModel());
+        const likes = likesRepository.getAll().filter((like) => like.OwnerId === instance.OwnerId);
+        for (const like of likes) {
+            const user = usersRepository.get(like.OwnerId);
+            like.Name = user.Name;
+            like.PhotoId;
+        }
+
         instance.OwnerName = owner.Name;
         instance.OwnerAvatar = owner.Avatar;
+        instance.Likes = likes;
         return instance;
     }
 }
