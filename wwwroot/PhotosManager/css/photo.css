@@ -34,7 +34,6 @@
     cursor:default;
 }
 
-
 .photoTitle {
     font-size: 18px;
     font-weight: bold;
@@ -63,7 +62,6 @@
     text-align:justify;
     overflow-wrap: break-word;
 }
-
 .photoCreationDate {
     font-size: 0.8em !important;
     color:dodgerblue;
@@ -89,5 +87,3 @@
     object-fit: cover;
     padding: 5px;
 }
-
-

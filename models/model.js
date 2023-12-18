@@ -12,8 +12,8 @@ export default class Model {
         this.key = null;
         this.state = { isValid: true, inConflict: false, notFound: false, errors: [] };
     }
-    addField(propertyName, propertyType, unique = false) {
-        this.fields.push({ name: propertyName, type: propertyType, unique: unique });
+    addField(propertyName, propertyType) {
+        this.fields.push({ name: propertyName, type: propertyType });
     }
     isMember(propertyName) {
         let exist = false;
@@ -43,6 +43,7 @@ export default class Model {
                 case "url": return /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/.test(value);
                 case "zipcode": return /^[a-zA-Z][0-9]+[a-zA-Z]\s[0-9]+[a-zA-Z][0-9]+$/.test(value);
                 case "object": return true;
+                case "array": return true;
                 case "asset": return true; // todo verify if it's a blob
                 default: return false;
             }

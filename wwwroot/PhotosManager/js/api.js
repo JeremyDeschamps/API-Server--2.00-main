@@ -249,7 +249,7 @@ class API {
         API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url: serverHost + "/likes/add",
+                url: serverHost + "/photos/addlike",
                 type: 'PUT',
                 data: {PhotoId: photoId},
                 contentType: 'application/json',
@@ -264,7 +264,7 @@ class API {
         API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url: serverHost + "/likes/remove",
+                url: serverHost + "/photos/removelike",
                 type: 'PUT',
                 data: JSON.stringify({PhotoId: photoId}),
                 contentType: 'application/json',
