@@ -204,13 +204,13 @@ export default class AccountsController extends Controller {
         if (Authorizations.writeGranted(this.HttpContext, this.authorizations)) {
             if (this.repository != null) {
                 if (this.HttpContext.path.id) {
-                    const likedPhotos = this.repository.findByFilter((user) => user.Likes.some((likeId) => likeId === id));
                     const photosRepository = new Repository(new PhotosModel(), true);
+                    const likedPhotos = photosRepository.findByFilter((user) => user.Likes.some((likeId) => likeId === id));
                     if (this.repository.remove(id)) {
                         
-                        for (const likePhoto in likedPhotos) {
+                        for (const likePhoto of likedPhotos) {
                             const index = likePhoto.Likes.findIndex((likeId) => likeId === id);
-                            likePhoto.Likes = likePhoto.Likes.splice(index, 1);
+                            likePhoto.Likes.splice(index, 1);
                             this.repository.update(likePhoto.Id, likePhoto);
                         }
                         photosRepository.keepByFilter((photo) => photo.OwnerId !== id);
