@@ -15,13 +15,12 @@ let contentScrollPosition = 0;
 
 let offset = 0;
 let previousScrollPosition = 0;
+let rowHeight = 28 - 1;
 let limit = 0;
 let endOfData = false;
 
 let dropdown;
 let filter = FilterType.none;
-let currentETag;
-let periodicalRefresh;
 
 $(document).ready(() => initUI());
 
@@ -77,7 +76,6 @@ function showWaitingGif() {
 }
 function eraseContent() {
     $("#content").empty();
-    clearInterval(periodicalRefresh);
 }
 function saveContentScrollPosition() {
     contentScrollPosition = $("#content")[0].scrollTop;
@@ -352,12 +350,6 @@ async function renderPhotos(refresh = false) {
     let photosCount = limit * (offset + 1);
     let query = refresh ? "?limit=" + photosCount + "&offset=" + 0 : "?limit=" + limit + "&offset=" + offset;
 
-    if (refresh) {
-        saveContentScrollPosition();
-        eraseContent();
-
-        offset = 0;
-    }
     switch (filter) {
         case FilterType.date:
             query += "sort=Date";
@@ -367,10 +359,14 @@ async function renderPhotos(refresh = false) {
             break;
     }
     const photos = await API.GetPhotos(query);
-
     if (photos.data !== null) {
-        if (photos.data.length > 0) {
+        if (refresh) {
+            saveContentScrollPosition();
             eraseContent();
+            $("#content").append($("<div id='photosList' class='photosLayout'>"));
+            offset = 0;
+        }
+        if (photos.data.length > 0) {
             $("#content").off();
             if (!photos) {
                 const errorMessage = API.currentHttpError;
@@ -381,18 +377,12 @@ async function renderPhotos(refresh = false) {
                 return;
 
             }
-            const eTag = await API.GetPhotosETag();
-            if (eTag) {
-                currentETag = eTag;
-            }
-            periodicalRefresh = setInterval(() => photosPeriodicalRefresh(), 10000);
 
             if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
                 updateHeader("Photos", "admin");
             else
                 updateHeader("Photos", "logged");
 
-            $("#content").append($("<div id='photosList' class='photosLayout'>"));
             const container = $("#photosList");
 
             switch (filter) {
@@ -1146,16 +1136,5 @@ class DropdownMenu {
         </span>`);
 
         $(`#${id}`).click(action);
-    }
-}
-
-async function photosPeriodicalRefresh() {
-    const result = await API.GetPhotosETag();
-    if (result) {
-        if (currentETag !== result)
-            renderPhotos();
-    } else {
-        console.log("Error trying to refresh the page");
-        console.log(API.currentHttpError);
     }
 }
