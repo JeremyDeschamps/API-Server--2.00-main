@@ -14,6 +14,8 @@ const ContentType = {
 let contentScrollPosition = 0;
 let dropdown;
 let filter = FilterType.none;
+let currentETag;
+let periodicalRefresh;
 
 $(document).ready(() => initUI());
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,6 +31,7 @@ function showWaitingGif() {
 }
 function eraseContent() {
     $("#content").empty();
+    clearInterval(periodicalRefresh);
 }
 function saveContentScrollPosition() {
     contentScrollPosition = $("#content")[0].scrollTop;
@@ -324,18 +327,24 @@ async function renderPhotos() {
             break;
     }
     const photos = await API.GetPhotos(query);
-
+    
+    
     if (!photos) {
         const errorMessage = API.currentHttpError;
         const status = API.currentStatus;
-
+        
         await API.logout();
         renderErrorMessage(errorMessage);
         return;
-
+        
+    }
+    const eTag = await API.GetPhotosETag();
+    if (eTag) {
+        currentETag = eTag;
     }
     timeout();
     eraseContent();
+    periodicalRefresh = setInterval(() => photosPeriodicalRefresh(), 10000);
 
     if (user.Authorizations.readAccess === 2 && user.Authorizations.writeAccess === 2)
         updateHeader("Photos", "admin");
@@ -1083,5 +1092,16 @@ class DropdownMenu {
         </span>`);
 
         $(`#${id}`).click(action);
+    }
+}
+
+async function photosPeriodicalRefresh() {
+    const result = await API.GetPhotosETag();
+    if (result) {
+        if (currentETag !== result)
+            renderPhotos();
+    } else {
+        console.log("Error trying to refresh the page");
+        console.log(API.currentHttpError);
     }
 }
