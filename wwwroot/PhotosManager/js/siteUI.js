@@ -646,7 +646,7 @@ function renderDeletePhoto(photo) {
     $("#content").append(
         $(`
         <div class="content form" style="text-align:center">
-        <h3>Voulez vous vraiment effacer cet usager et toutes ses photos ?</h3>
+        <h3>Voulez vous vraiment effacer cette photos ?</h3>
         <div class="UserLayout">
             <div class"UserInfo">
                 <div class="UserName">${photo.Title}</div>
