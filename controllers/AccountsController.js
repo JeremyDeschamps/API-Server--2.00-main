@@ -1,4 +1,5 @@
 import UserModel from '../models/user.js';
+import PhotosModel from '../models/photo.js';
 import Repository from '../models/repository.js';
 import TokenManager from '../tokensManager.js';
 import * as utilities from "../utilities.js";
@@ -194,8 +195,29 @@ export default class AccountsController extends Controller {
         {
             const previousAuthorizations = this.authorizations;
             this.authorizations = Authorizations.user();
-            super.remove(id);
+            this.fullyRemove(id);
             this.authorizations = previousAuthorizations;
         }
+    }
+
+    fullyRemove(id) {
+        if (Authorizations.writeGranted(this.HttpContext, this.authorizations)) {
+            if (this.repository != null) {
+                if (this.HttpContext.path.id) {
+                    const photosRepository = new Repository(new PhotosModel(), false);
+                    const photosToDelete = photosRepository.getAll((photo) => photo.OwnerId === id);
+                    if (this.repository.remove(id)) {
+                        for (const photo of photosToDelete)
+                            photosRepository.remove(photo.Id);
+                        this.HttpContext.response.accepted();
+                    }
+                    else
+                        this.HttpContext.response.notFound("Ressource not found.");
+                } else
+                    this.HttpContext.response.badRequest("The Id in the request url is rather not specified or syntactically wrong.");
+            } else
+                this.HttpContext.response.notImplemented();
+        } else
+            this.HttpContext.response.unAuthorized("Unauthorized access");
     }
 }
