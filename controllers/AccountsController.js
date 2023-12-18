@@ -205,10 +205,8 @@ export default class AccountsController extends Controller {
             if (this.repository != null) {
                 if (this.HttpContext.path.id) {
                     const photosRepository = new Repository(new PhotosModel(), false);
-                    const photosToDelete = photosRepository.getAll((photo) => photo.OwnerId === id);
                     if (this.repository.remove(id)) {
-                        for (const photo of photosToDelete)
-                            photosRepository.remove(photo.Id);
+                        photosRepository.keepByFilter((photo) => photo.OwnerId !== id);
                         this.HttpContext.response.accepted();
                     }
                     else
