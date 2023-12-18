@@ -108,7 +108,7 @@ function initImageUploaders() {
         } else {
             $(this).append(`<input 
                             id="${controlId}" 
-                            name="${controlId}" 
+                            name="${controlId}"
                             waitingImage ="${waitingImage}">`);
         }
         

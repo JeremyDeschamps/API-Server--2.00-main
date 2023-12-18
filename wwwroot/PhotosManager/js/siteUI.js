@@ -360,12 +360,12 @@ async function renderPhotos() {
 
     for (const photo of photos.data) {
         const shared = user.Id === photo.OwnerId && photo.Shared;
-        photo.Likes.sort(function(x,y){ return x.OwnerId === user.Id ? -1 : y.OwnerId === user.Id ? 1 : 0; });
-        const wasLikedByUser = photo.Likes.some((like) => like.OwnerId == user.Id);
+        photo.Likes.sort(function(x,y){ return x.Id === user.Id ? -1 : y.Id === user.Id ? 1 : 0; });
+        const wasLikedByUser = photo.Likes.some((like) => like.Id == user.Id);
 
         const likeList = photo.Likes.map((like) => like.Name);
         
-
+        console.log(likeList.slice(0, 10).join("&#013;"));
         container.append(`
         <div class="photoLayout">
             <div class="photosTitleContainer">
@@ -380,7 +380,7 @@ async function renderPhotos() {
             <div class="photoCreationDate">${convertToFrenchDate(photo.Date)} 
                 <span class="likesSummary">
                     <span class="likesCount">${photo.Likes.length}</span>
-                    <i title="${likeList.slice(0, 10).join("&#10;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+                    <i title="${likeList.slice(0, 10).join("&#013;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
                 </span>
             </div>
         </div>`);
@@ -402,7 +402,7 @@ async function renderPhotos() {
 function renderPhotosDetails(photo, likeList, user) {
     timeout();
     eraseContent();
-    const wasLikedByUser = photo.Likes.some((like) => like.OwnerId == user.Id);
+    const wasLikedByUser = photo.Likes.some((like) => like.Id == user.Id);
     $("#content").append(`
         <div class="photoDetailsOwner">${photo.OwnerName}</div>
         <hr>
@@ -411,7 +411,7 @@ function renderPhotosDetails(photo, likeList, user) {
         <div class="photoDetailsCreationDate">${convertToFrenchDate(photo.Date)} 
             <span class="likesSummary">
                 <span class="likesCount">${photo.Likes.length}</span>
-                <i title="${likeList.slice(0, 10).join("&#10;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
+                <i title="${likeList.slice(0, 10).join("&#013;")}" class="${wasLikedByUser ? "fa fa-thumbs-up" : "fa-regular fa-thumbs-up"} cmdIconVisible" style="color: blue;"></i>
             </span>
         </div>
         <div class="photoDetailsDescription">${photo.Description} </div>
@@ -427,7 +427,7 @@ function attachLikeButtonBehaviour(likeButton, likeCount, pressed, likeList, pho
                 likeButton.addClass("fa-regular");
                 likeCount.text(Number(likeCount.text()) - 1);
                 likeList.shift();
-                likeButton.attr("title", likeList.slice(0, 10).join("&#10;"));
+                likeButton.attr("title", likeList.slice(0, 10).join("\r\n"));
                 pressed = !pressed;
             } else {
                 console.log(API.currentHttpError);
@@ -439,7 +439,7 @@ function attachLikeButtonBehaviour(likeButton, likeCount, pressed, likeList, pho
                 likeButton.addClass("fa");
                 likeCount.text(Number(likeCount.text()) + 1);
                 likeList.unshift(name);
-                likeButton.attr("title", likeList.slice(0, 10).join("&#10;"));
+                likeButton.attr("title", likeList.slice(0, 10).join("\r\n"));
                 pressed = !pressed;
             } else {
                 console.log(API.currentHttpError);
@@ -448,7 +448,7 @@ function attachLikeButtonBehaviour(likeButton, likeCount, pressed, likeList, pho
         
     });
 }
-function renderAddPhoto() {
+function renderAddPhoto(errorMessage = "") {
     timeout();
     eraseContent();
     const user = API.retrieveLoggedUser();
@@ -472,6 +472,7 @@ function renderAddPhoto() {
         RequireMessage = 'Veuillez entrer un titre'
         InvalidMessage = 'Titre invalide'
         value="">
+        <span style='color:red'>${errorMessage}</span>
         <textarea type="text"
         class="form-control Alpha"
         name="Description"
@@ -488,7 +489,7 @@ function renderAddPhoto() {
         <fieldset>
         <legend>Image</legend>
         <div class='imageUploader'
-        newImage='true'
+        newImage='1'
         controlId='Image'
         imageSrc='images/photoCloudLogo.png'
         waitingImage="images/Loading_icon.gif">
@@ -520,11 +521,23 @@ function renderAddPhoto() {
         const result = await API.CreatePhoto(photo); // commander la création au service API
         if (result) 
             renderPhotos();
-        else
-            renderErrorMessage(API.currentHttpError);
+        else {
+            const errorMessage = API.currentHttpError;
+            const status = API.currentStatus;
+
+            switch (status) {
+                case 409:
+                    renderAddPhoto("Titre dejà utillisé");
+                    break;
+
+                default:
+                    renderErrorMessage("Le serveur ne répond pas");
+                    break;
+            }
+        }
     });
 }
-function renderEditPhoto(photo){
+function renderEditPhoto(photo,errorMessage = ""){
     timeout();
     eraseContent();
     const user = API.retrieveLoggedUser();
@@ -546,6 +559,7 @@ function renderEditPhoto(photo){
         RequireMessage = 'Veuillez entrer un titre'
         InvalidMessage = 'Titre invalide'
         value="${photo.Title}">
+        <span style='color:red'>${errorMessage}</span>
         <textarea type="text"
         class="form-control Alpha"
         name="Description"
@@ -600,8 +614,20 @@ function renderEditPhoto(photo){
         if (result) {
             renderPhotos();
         }
-        else
-            renderErrorMessage(API.currentHttpError);
+        else {
+            const errorMessage = API.currentHttpError;
+            const status = API.currentStatus;
+
+            switch (status) {
+                case 409:
+                    renderAddPhoto("Titre dejà utillisé");
+                    break;
+
+                default:
+                    renderErrorMessage("Le serveur ne répond pas");
+                    break;
+            }
+        }
     });
 }
 function renderDeletePhoto(photo) {
@@ -633,7 +659,6 @@ function renderDeletePhoto(photo) {
     });
     $("#annulerButton").click(() => renderPhotos());
 }
-
 function renderEditProfileForm() {
     const loggedUser = API.retrieveLoggedUser();
     const type = loggedUser.Authorizations.readAccess === 2 && loggedUser.Authorizations.writeAccess === 2 ? "admin" : "logged";
@@ -809,7 +834,7 @@ function renderSignUpForm() {
         <fieldset>
         <legend>Avatar</legend>
         <div class='imageUploader'
-        newImage='true'
+        newImage='1'
         controlId='Avatar'
         imageSrc='images/no-avatar.png'
         waitingImage="images/Loading_icon.gif">
