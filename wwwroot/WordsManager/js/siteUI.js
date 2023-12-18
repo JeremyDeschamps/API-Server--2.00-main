@@ -86,7 +86,8 @@ function renderAbout() {
 }
 async function renderWords(refresh = false) {
     let wordsCount = limit * (offset + 1);
-    let queryString = refresh ? "?limit=" + wordsCount + "&offset=" + 0 : "?limit=" + limit + "&offset=" + offset;
+    let queryString = refresh ? "?fields=Val,Def&limit=" + wordsCount + "&offset=" + 0 : "?fields=Val,Def&limit=" + limit + "&offset=" + offset;
+    if (search != "") queryString += "&Val=" + search;
     $("#actionTitle").text("Mots");
     $("#search").show();
     $("#abort").hide();
